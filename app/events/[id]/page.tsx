@@ -67,6 +67,8 @@ export default function EventDetailPage() {
     const {data:history} = await s.from("event_activity").select("id,activity_type,description,created_at")
       .eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("created_at",{ascending:false});
     setActivity((history || []) as Activity[]);
+    const {data:functionRows}=await s.from("event_functions").select("id,function_name,function_date,venue,expected_guest_count,menu_notes").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id).order("sort_order",{ascending:true}).order("function_date",{ascending:true});
+    setFunctions((functionRows||[]) as FunctionRow[]);
     setLoading(false);
   }
 
