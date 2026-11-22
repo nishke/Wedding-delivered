@@ -7,12 +7,12 @@ const priorities = [
 ];
 
 const modules = [
-  { number: "01", title: "Events", detail: "Enquiries, bookings and event execution", icon: "◷" },
+  { number: "01", title: "Events", detail: "Enquiries, bookings and event execution", icon: "◷", href: "/events" },
   { number: "02", title: "Menu Studio", detail: "Standardise menus and create documents", icon: "▤" },
   { number: "03", title: "Quotations", detail: "Custom pricing, revisions and sharing", icon: "₹" },
   { number: "04", title: "Finance", detail: "Payments, expenses and event profit", icon: "↗" },
   { number: "05", title: "Food planning", detail: "Dish quantities, buffers and purchases", icon: "✳" },
-  { number: "06", title: "Customers & leads", detail: "Customer records and enquiry inbox", icon: "◎" },
+  { number: "06", title: "Customers & leads", detail: "Customer records and enquiry inbox", icon: "◎", href: "/customers" },
 ];
 
 export default function Home() {
@@ -26,7 +26,7 @@ export default function Home() {
         <a className="nav-item" href="#modules"><span>▤</span> Menu Studio</a>
         <a className="nav-item" href="#modules"><span>₹</span> Quotations</a>
         <a className="nav-item" href="#modules"><span>↗</span> Finance</a>
-        <a className="nav-item" href="#modules"><span>◎</span> Customers & leads</a>
+        <a className="nav-item" href="/customers"><span>◎</span> Customers & leads</a>
         <div className="sidebar-bottom"><div className="pilot-dot"/> Pilot workspace <span className="pilot-label">V1</span></div>
       </aside>
 
@@ -45,7 +45,7 @@ export default function Home() {
         <div className="priority-list">{priorities.map((item) => <article className="priority-item" key={item.title}><div className="priority-time">{item.time}</div><div className="priority-copy"><h3>{item.title}</h3><p>{item.detail}</p></div><span className={`tag ${item.tone}`}>{item.tag}</span><span className="priority-arrow">↗</span></article>)}</div>
 
         <div className="section-heading modules-heading" id="modules"><div><div className="eyebrow">THE WORKSPACE</div><h2>Everything in its place</h2></div><span className="section-note">Built around the way catering works</span></div>
-        <div className="modules-grid">{modules.map((module) => <a className="module-card" href="#modules" key={module.title}><div className="module-top"><span className="module-icon">{module.icon}</span><span className="module-number">{module.number}</span></div><h3>{module.title}</h3><p>{module.detail}</p><span className="module-link">Open module <span>→</span></span></a>)}</div>
+        <div className="modules-grid">{modules.map((module) => <a className="module-card" href={("href" in module && module.href) ? module.href : "#modules"} key={module.title}><div className="module-top"><span className="module-icon">{module.icon}</span><span className="module-number">{module.number}</span></div><h3>{module.title}</h3><p>{module.detail}</p><span className="module-link">Open module <span>→</span></span></a>)}</div>
         <footer className="footer"><span>DHANDE’S MILLENNIUM CATERING</span><span>Thoughtfully organised. Made for service.</span></footer>
       </section>
     </main>
