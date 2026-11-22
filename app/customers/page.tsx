@@ -57,10 +57,10 @@ export default function CustomersPage() {
         {loading ? <p>Loading customers…</p> : message ? <p className="auth-message" role="alert">{message}</p> :
           filtered.length === 0 ? <div className="events-empty"><h2>{customers.length ? "No matching customers." : "No customer records yet."}</h2><p>{customers.length ? "Try a different search." : "Customer records will appear here when you create events."}</p></div> :
           <div className="customer-directory">
-            {filtered.map((customer) => <article className="customer-directory-row" key={customer.id}>
+            {filtered.map((customer) => <Link className="customer-directory-row" href={"/customers/"+customer.id} key={customer.id}>
               <div className="customer-avatar">{customer.full_name.trim().charAt(0).toLocaleUpperCase()}</div>
               <div className="customer-directory-main"><strong>{customer.full_name}</strong><span>{customer.phone || "No phone recorded"}{customer.email ? " · " + customer.email : ""}</span>{customer.address && <small>{customer.address}</small>}</div>
-            </article>)}
+            </Link>)}
           </div>
         }
       </section>
