@@ -191,7 +191,7 @@ export default function EventDetailPage() {
        <label>Leftovers / food returned<textarea rows={2} value={leftoversNotes} onChange={e=>setLeftoversNotes(e.target.value)} placeholder="Record quantities or disposition, if known"/></label>
        <label>Food wastage<textarea rows={2} value={wastageNotes} onChange={e=>setWastageNotes(e.target.value)} placeholder="Record wastage details, quantities or cost if tracked"/></label>
        <label>Final closure notes<textarea rows={2} value={closureNotes} onChange={e=>setClosureNotes(e.target.value)} placeholder="Any final settlement or operational notes"/></label>
-       <button className="primary-button" disabled={busy||status==="cancelled"}>{busy?"Closing…":"Close event & save reconciliation"}</button>
+       <button className="primary-button" disabled={busy||status!=="completed"}>{busy?"Closing…":status==="completed"?"Close event & save reconciliation":"Mark event Completed before closing"}</button>
       </form>}
     </section>}
     <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><div className="events-title-row"><h2>Functions</h2><Link className="text-button" href={"/events/"+event.id+"/menu"}>Plan menus →</Link></div>
