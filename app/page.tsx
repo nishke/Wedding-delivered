@@ -43,8 +43,8 @@ export default function Home() {
         <div className="metrics-grid">
           <article className="metric-card"><div className="metric-top"><span>UPCOMING EVENTS</span><span className="metric-icon">◷</span></div><div className="metric-value">{loading?"—":metrics.upcoming}</div><div className="metric-foot">Dated today or later, excluding closed and cancelled</div></article>
           <article className="metric-card"><div className="metric-top"><span>OPEN ENQUIRIES</span><span className="metric-icon">◎</span></div><div className="metric-value">{loading?"—":metrics.enquiries}</div><div className="metric-foot">Leads marked as needing review</div></article>
-          <article className="metric-card"><div className="metric-top"><span>PAYMENTS DUE</span><span className="metric-icon">₹</span></div><div className="metric-value">{loading?"—":inr(metrics.due)}</div><div className="metric-foot">Agreed booking amounts less linked receipts</div></article>
-          <article className="metric-card accent-card"><div className="metric-top"><span>MONTHLY REVENUE</span><span className="metric-icon">↗</span></div><div className="metric-value">{loading?"—":inr(metrics.revenue)}</div><div className="metric-foot">Receipts recorded this calendar month</div></article>
+          <article className="metric-card"><div className="metric-top"><span>PAYMENTS DUE</span><span className="metric-icon">₹</span></div><div className="metric-value">{loading?"—":canViewFinance?inr(metrics.due):"Restricted"}</div><div className="metric-foot">Agreed booking amounts less linked receipts</div></article>
+          <article className="metric-card accent-card"><div className="metric-top"><span>MONTHLY REVENUE</span><span className="metric-icon">↗</span></div><div className="metric-value">{loading?"—":canViewFinance?inr(metrics.revenue):"Restricted"}</div><div className="metric-foot">Receipts recorded this calendar month</div></article>
         </div>
 
         <div className="section-heading"><div><div className="eyebrow">STAY AHEAD</div><h2>What needs your attention</h2></div><span className="section-note">Your activity will show here</span></div>
