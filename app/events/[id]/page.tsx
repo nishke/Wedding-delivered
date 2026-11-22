@@ -128,6 +128,7 @@ export default function EventDetailPage() {
 
   return <main className="auth-shell"><section className="auth-card event-card">
     <Link className="back-link" href="/events">← Events</Link>
+    <div className="events-title-row"><Link className="text-button" href={"/events/"+event.id+"/menu"}>Plan menu →</Link><Link className="text-button" href={"/events/"+event.id+"/quotations"}>Create quotation →</Link></div>
     <div className="eyebrow">EVENT RECORD · EDIT</div><h1>{event.event_name}</h1>
     <p>{customer || "Customer not linked"}{phone ? " · "+phone : ""}</p>
     <div className="event-facts">
