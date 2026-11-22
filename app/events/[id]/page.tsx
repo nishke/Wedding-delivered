@@ -11,6 +11,7 @@ type EventRow = {
   quoted_amount: number | null; agreed_amount: number; advance_percentage: number; agreed_advance_amount: number; date_locked: boolean; booking_approval_status: string; customer_id: string | null; caterer_id: string;
 };
 type Activity = { id: string; activity_type: string; description: string; created_at: string };
+type FunctionRow = { id:string; function_name:string; function_date:string; venue:string|null; expected_guest_count:number|null; menu_notes:string|null };
 const statusLabels: Record<string,string> = {
   enquiry:"Enquiry", quotation_in_progress:"Quotation in progress", tentative:"Tentative",
   confirmed:"Confirmed", preparation:"Preparation", completed:"Completed", closed:"Closed", cancelled:"Cancelled"
@@ -35,6 +36,12 @@ export default function EventDetailPage() {
   const [approvalStatus,setApprovalStatus] = useState("pending");
   const [status,setStatus] = useState("enquiry");
   const [activity,setActivity] = useState<Activity[]>([]);
+  const [functions,setFunctions] = useState<FunctionRow[]>([]);
+  const [functionName,setFunctionName] = useState("");
+  const [functionDate,setFunctionDate] = useState("");
+  const [functionVenue,setFunctionVenue] = useState("");
+  const [functionGuests,setFunctionGuests] = useState("");
+  const [functionMenu,setFunctionMenu] = useState("");
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState("");
@@ -133,7 +140,16 @@ export default function EventDetailPage() {
       <button className="primary-button" disabled={busy}>{busy ? "Saving…" : "Save event changes"}</button>
     </form>
     {message && <p className="auth-message" role="status">{message}</p>}
-    <section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button></section>
+    <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><h2>Functions</h2>
+      {functions.length===0?<p className="activity-empty">No functions added yet.</p>:<div className="activity-list">{functions.map(fn=><article className="activity-item" key={fn.id}><span className="activity-dot"/><div><p><strong>{fn.function_name}</strong> · {new Date(fn.function_date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</p><time>{fn.expected_guest_count??"—"} guests{fn.venue?" · "+fn.venue:""}{fn.menu_notes?" · "+fn.menu_notes:""}</time></div></article>)}</div>}
+      <form className="auth-form" onSubmit={async e=>{e.preventDefault();if(!event||!functionName.trim()||!functionDate)return;setBusy(true);setMessage("");const s=createClient();const {data:{user}}=await s.auth.getUser();const {error}=await s.from("event_functions").insert({caterer_id:event.caterer_id,booking_id:event.id,function_name:functionName.trim(),function_date:functionDate,venue:functionVenue.trim()||null,expected_guest_count:functionGuests?Number(functionGuests):null,menu_notes:functionMenu.trim()||null,sort_order:functions.length});setBusy(false);if(error){setMessage(error.message);return;}await s.from("event_activity").insert({caterer_id:event.caterer_id,event_id:event.id,actor_id:user?.id,activity_type:"function_added",description:"Added function: "+functionName.trim()+".",metadata:{function_date:functionDate}});setFunctionName("");setFunctionDate("");setFunctionVenue("");setFunctionGuests("");setFunctionMenu("");await loadEvent();}}>
+        <label>Function name<input required value={functionName} onChange={e=>setFunctionName(e.target.value)} placeholder="e.g. Haldi, Mehendi, Reception" /></label>
+        <div className="form-pair"><label>Function date<input type="date" required value={functionDate} onChange={e=>setFunctionDate(e.target.value)} /></label><label>Expected guests<input type="number" min="1" value={functionGuests} onChange={e=>setFunctionGuests(e.target.value)} /></label></div>
+        <label>Venue<input value={functionVenue} onChange={e=>setFunctionVenue(e.target.value)} /></label>
+        <label>Menu notes<textarea rows={2} value={functionMenu} onChange={e=>setFunctionMenu(e.target.value)} placeholder="Function-specific menu and service notes" /></label>
+        <button className="primary-button" disabled={busy}>{busy?"Adding…":"Add function"}</button>
+      </form>
+    </section>\n    <section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button></section>
     <section className="activity-section"><div className="eyebrow">EVENT HISTORY</div><h2>Activity</h2>
       {activity.length===0 ? <p className="activity-empty">No activity recorded yet.</p> :
         <div className="activity-list">{activity.map(item=><article className="activity-item" key={item.id}><span className="activity-dot"/><div><p>{item.description}</p><time>{new Date(item.created_at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"})}</time></div></article>)}</div>}
