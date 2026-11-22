@@ -93,11 +93,11 @@ export default function EventDetailPage() {
     if(["owner","manager"].includes(membership.role)){const {data:expenseRows}=await s.from("event_expenses").select("id,expense_type,amount,expense_date,expense_status,vendor_name,notes").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("expense_date",{ascending:false});setExpenses((expenseRows||[]) as ExpenseRow[]);}
     if(["owner","manager"].includes(membership.role)){
       const [{data:staffRows},{data:assignmentRows}]=await Promise.all([
-       s.from("caterer_memberships").select("user_id,profiles(full_name)").eq("caterer_id",membership.caterer_id).eq("role","staff"),
-       s.from("event_assignments").select("user_id,profiles(full_name)").eq("event_id",row.id).eq("caterer_id",membership.caterer_id)
+       s.from("caterer_memberships").select("user_id").eq("caterer_id",membership.caterer_id).eq("role","staff"),
+       s.from("event_assignments").select("user_id").eq("event_id",row.id).eq("caterer_id",membership.caterer_id)
       ]);
-      setStaffMembers((staffRows||[]).map((x:any)=>({user_id:x.user_id,full_name:x.profiles?.full_name||null})));
-      setAssignedStaff((assignmentRows||[]).map((x:any)=>({user_id:x.user_id,full_name:x.profiles?.full_name||null})));
+      setStaffMembers((staffRows||[]).map((x:any)=>({user_id:x.user_id,full_name:null})));
+      setAssignedStaff((assignmentRows||[]).map((x:any)=>({user_id:x.user_id,full_name:null})));
     }
     if(["owner","manager"].includes(membership.role)){
       const [{data:receiptRows},{data:closeoutRow}]=await Promise.all([
