@@ -90,7 +90,7 @@ export default function EventQuotationsPage(){
   {message&&<p className="auth-message" role="status">{message}</p>}
   {loading?<p>Loading quotations…</p>:<>
    <section className="activity-section"><h2>Previous revisions</h2>
-    {quotes.length===0?<p className="activity-empty">No quotations created yet.</p>:<div className="activity-list">{quotes.map(q=><article className="activity-item" key={q.id}><span className="activity-dot"/><div><p><strong>Revision {q.revision}</strong> · {q.status.toUpperCase()}</p><time>{new Date(q.created_at).toLocaleDateString("en-IN")} · {money(Number(q.total_amount))}{q.gst_applicable?" · GST "+q.gst_rate+"%":" · No GST applied"}</time></div><button type="button" className="text-button" onClick={()=>void openQuote(q)}>View</button></article>)}</div>}
+    {quotes.length===0?<p className="activity-empty">No quotations created yet.</p>:<div className="activity-list">{quotes.map(q=><article className="activity-item" key={q.id}><span className="activity-dot"/><div><p><strong>Revision {q.revision}</strong> · {q.status.toUpperCase()}</p><time>{new Date(q.created_at).toLocaleDateString("en-IN")} · {money(Number(q.total_amount))}{q.gst_applicable?" · GST "+q.gst_rate+"%":" · No GST applied"}</time></div><button type="button" className="text-button" onClick={()=>void openQuote(q)}>View</button><Link className="text-button" href={"/events/"+params.id+"/quotations/"+q.id}>Print / PDF →</Link></article>)}</div>}
    </section>
    {canManage&&<form className="auth-form activity-section" onSubmit={saveQuote}>
     <h2>Create new revision</h2>
