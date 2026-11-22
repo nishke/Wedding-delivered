@@ -1,5 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+const inr=(n:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
+
 const priorities = [
   { time: "Today", title: "Review new enquiries", detail: "Keep every incoming lead accounted for", tag: "Leads", tone: "amber" },
   { time: "Upcoming", title: "Confirm event requirements", detail: "Guest count, menu and venue details", tag: "Events", tone: "blue" },
@@ -35,10 +41,10 @@ export default function Home() {
         <div className="welcome-row"><div><div className="eyebrow">YOUR BUSINESS, AT A GLANCE</div><h1>Good work starts<br className="mobile-break"/> with a clear view.</h1><p className="intro">A single place to keep every event, menu and payment in order.</p></div><button className="primary-button" type="button" onClick={() => { window.location.href = "/events/new"; }}>＋ <span>Create an event</span></button></div>
 
         <div className="metrics-grid">
-          <article className="metric-card"><div className="metric-top"><span>UPCOMING EVENTS</span><span className="metric-icon">◷</span></div><div className="metric-value">—</div><div className="metric-foot">Your next events will appear here</div></article>
-          <article className="metric-card"><div className="metric-top"><span>OPEN ENQUIRIES</span><span className="metric-icon">◎</span></div><div className="metric-value">—</div><div className="metric-foot">New leads awaiting review</div></article>
-          <article className="metric-card"><div className="metric-top"><span>PAYMENTS DUE</span><span className="metric-icon">₹</span></div><div className="metric-value">—</div><div className="metric-foot">Outstanding customer balances</div></article>
-          <article className="metric-card accent-card"><div className="metric-top"><span>MONTHLY REVENUE</span><span className="metric-icon">↗</span></div><div className="metric-value">—</div><div className="metric-foot">Recorded collections this month</div></article>
+          <article className="metric-card"><div className="metric-top"><span>UPCOMING EVENTS</span><span className="metric-icon">◷</span></div><div className="metric-value">{loading?"—":metrics.upcoming}</div><div className="metric-foot">Dated today or later, excluding closed and cancelled</div></article>
+          <article className="metric-card"><div className="metric-top"><span>OPEN ENQUIRIES</span><span className="metric-icon">◎</span></div><div className="metric-value">{loading?"—":metrics.enquiries}</div><div className="metric-foot">Leads marked as needing review</div></article>
+          <article className="metric-card"><div className="metric-top"><span>PAYMENTS DUE</span><span className="metric-icon">₹</span></div><div className="metric-value">{loading?"—":inr(metrics.due)}</div><div className="metric-foot">Agreed booking amounts less linked receipts</div></article>
+          <article className="metric-card accent-card"><div className="metric-top"><span>MONTHLY REVENUE</span><span className="metric-icon">↗</span></div><div className="metric-value">{loading?"—":inr(metrics.revenue)}</div><div className="metric-foot">Receipts recorded this calendar month</div></article>
         </div>
 
         <div className="section-heading"><div><div className="eyebrow">STAY AHEAD</div><h2>What needs your attention</h2></div><span className="section-note">Your activity will show here</span></div>
