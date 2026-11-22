@@ -11,7 +11,8 @@ type EventRow = {
   quoted_amount: number | null; agreed_amount: number; advance_percentage: number; agreed_advance_amount: number; date_locked: boolean; booking_approval_status: string; customer_id: string | null; caterer_id: string;
 };
 type Activity = { id: string; activity_type: string; description: string; created_at: string };
-type FunctionRow = { id:string; function_name:string; function_date:string; venue:string|null; expected_guest_count:number|null; menu_notes:string|null };\ntype ExpenseRow = {id:string;expense_type:string;amount:number;expense_date:string;expense_status:string;vendor_name:string|null;notes:string|null};
+type FunctionRow = { id:string; function_name:string; function_date:string; venue:string|null; expected_guest_count:number|null; menu_notes:string|null };
+type ExpenseRow = {id:string;expense_type:string;amount:number;expense_date:string;expense_status:string;vendor_name:string|null;notes:string|null};
 const statusLabels: Record<string,string> = {
   enquiry:"Enquiry", quotation_in_progress:"Quotation in progress", tentative:"Tentative",
   confirmed:"Confirmed", preparation:"Preparation", completed:"Completed", closed:"Closed", cancelled:"Cancelled"
@@ -37,7 +38,14 @@ export default function EventDetailPage() {
   const [approvalStatus,setApprovalStatus] = useState("pending");
   const [status,setStatus] = useState("enquiry");
   const [activity,setActivity] = useState<Activity[]>([]);
-  const [functions,setFunctions] = useState<FunctionRow[]>([]);\n  const [expenses,setExpenses] = useState<ExpenseRow[]>([]);\n  const [expenseAmount,setExpenseAmount] = useState("");\n  const [expenseType,setExpenseType] = useState("ingredients");\n  const [expenseStatus,setExpenseStatus] = useState("actual");\n  const [expenseDate,setExpenseDate] = useState(new Date().toISOString().slice(0,10));\n  const [expenseVendor,setExpenseVendor] = useState("");\n  const [expenseNotes,setExpenseNotes] = useState("");
+  const [functions,setFunctions] = useState<FunctionRow[]>([]);
+  const [expenses,setExpenses] = useState<ExpenseRow[]>([]);
+  const [expenseAmount,setExpenseAmount] = useState("");
+  const [expenseType,setExpenseType] = useState("ingredients");
+  const [expenseStatus,setExpenseStatus] = useState("actual");
+  const [expenseDate,setExpenseDate] = useState(new Date().toISOString().slice(0,10));
+  const [expenseVendor,setExpenseVendor] = useState("");
+  const [expenseNotes,setExpenseNotes] = useState("");
   const [functionName,setFunctionName] = useState("");
   const [functionDate,setFunctionDate] = useState("");
   const [functionVenue,setFunctionVenue] = useState("");
@@ -71,7 +79,8 @@ export default function EventDetailPage() {
       .eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("created_at",{ascending:false});
     setActivity((history || []) as Activity[]);
     const {data:functionRows}=await s.from("event_functions").select("id,function_name,function_date,venue,expected_guest_count,menu_notes").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id).order("sort_order",{ascending:true}).order("function_date",{ascending:true});
-    setFunctions((functionRows||[]) as FunctionRow[]);\n    if(["owner","manager"].includes(membership.role)){const {data:expenseRows}=await s.from("event_expenses").select("id,expense_type,amount,expense_date,expense_status,vendor_name,notes").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("expense_date",{ascending:false});setExpenses((expenseRows||[]) as ExpenseRow[]);}
+    setFunctions((functionRows||[]) as FunctionRow[]);
+    if(["owner","manager"].includes(membership.role)){const {data:expenseRows}=await s.from("event_expenses").select("id,expense_type,amount,expense_date,expense_status,vendor_name,notes").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("expense_date",{ascending:false});setExpenses((expenseRows||[]) as ExpenseRow[]);}
     setLoading(false);
   }
 
@@ -155,7 +164,8 @@ export default function EventDetailPage() {
        <label>Vendor / payee (optional)<input value={expenseVendor} onChange={e=>setExpenseVendor(e.target.value)} /></label><label>Notes (optional)<input value={expenseNotes} onChange={e=>setExpenseNotes(e.target.value)} /></label>
        <button className="primary-button" disabled={busy}>{busy?"Saving…":"Add expense"}</button>
       </form>
-    </section>}\n    <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><h2>Functions</h2>
+    </section>}
+    <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><h2>Functions</h2>
       {functions.length===0?<p className="activity-empty">No functions added yet.</p>:<div className="activity-list">{functions.map(fn=><article className="activity-item" key={fn.id}><span className="activity-dot"/><div><p><strong>{fn.function_name}</strong> · {new Date(fn.function_date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</p><time>{fn.expected_guest_count??"—"} guests{fn.venue?" · "+fn.venue:""}{fn.menu_notes?" · "+fn.menu_notes:""}</time></div></article>)}</div>}
       <form className="auth-form" onSubmit={async e=>{e.preventDefault();if(!event||!functionName.trim()||!functionDate)return;setBusy(true);setMessage("");const s=createClient();const {data:{user}}=await s.auth.getUser();const {error}=await s.from("event_functions").insert({caterer_id:event.caterer_id,booking_id:event.id,function_name:functionName.trim(),function_date:functionDate,venue:functionVenue.trim()||null,expected_guest_count:functionGuests?Number(functionGuests):null,menu_notes:functionMenu.trim()||null,sort_order:functions.length});setBusy(false);if(error){setMessage(error.message);return;}await s.from("event_activity").insert({caterer_id:event.caterer_id,event_id:event.id,actor_id:user?.id,activity_type:"function_added",description:"Added function: "+functionName.trim()+".",metadata:{function_date:functionDate}});setFunctionName("");setFunctionDate("");setFunctionVenue("");setFunctionGuests("");setFunctionMenu("");await loadEvent();}}>
         <label>Function name<input required value={functionName} onChange={e=>setFunctionName(e.target.value)} placeholder="e.g. Haldi, Mehendi, Reception" /></label>
