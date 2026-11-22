@@ -20,6 +20,7 @@ begin
  if not exists(select 1 from public.caterer_memberships m where m.caterer_id=v_event.caterer_id and m.user_id=v_user_id and m.role in ('owner','manager')) then raise exception 'Only owners and managers can close an event.';end if;
  if v_event.status='cancelled' then raise exception 'A cancelled event cannot be closed as completed.';end if;
  if v_event.status='closed' then raise exception 'This event is already closed.';end if;
+ if v_event.status<>'completed' then raise exception 'Mark the event completed before performing final close-out.';end if;
  if p_final_guest_count is null or p_final_guest_count<1 then raise exception 'Final guest count must be at least one.';end if;
  update public.events set final_guest_count=p_final_guest_count,status='closed' where id=p_event_id;
  insert into public.event_closeouts(caterer_id,event_id,leftovers_notes,wastage_notes,closure_notes,closed_by)
