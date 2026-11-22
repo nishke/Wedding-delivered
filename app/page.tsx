@@ -1,3 +1,5 @@
+"use client";
+
 const priorities = [
   { time: "Today", title: "Review new enquiries", detail: "Keep every incoming lead accounted for", tag: "Leads", tone: "amber" },
   { time: "Upcoming", title: "Confirm event requirements", detail: "Guest count, menu and venue details", tag: "Events", tone: "blue" },
