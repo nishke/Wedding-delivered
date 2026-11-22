@@ -22,7 +22,7 @@ export default function Home() {
         <a className="brand" href="#home"><span className="brand-mark">D</span><span>DHANDE’S<small> MILLENNIUM CATERING</small></span></a>
         <div className="side-label">WORKSPACE</div>
         <a className="nav-item active" href="#home"><span>⌂</span> Overview</a>
-        <a className="nav-item" href="#modules"><span>◷</span> Events</a>
+        <a className="nav-item" href="/events/new"><span>◷</span> Events</a>
         <a className="nav-item" href="#modules"><span>▤</span> Menu Studio</a>
         <a className="nav-item" href="#modules"><span>₹</span> Quotations</a>
         <a className="nav-item" href="#modules"><span>↗</span> Finance</a>
@@ -31,8 +31,8 @@ export default function Home() {
       </aside>
 
       <section className="main-content" id="home">
-        <header className="topbar"><div className="breadcrumb">Workspace <span>/</span> Overview</div><div className="topbar-right"><span className="date-label">CATERING OPERATIONS</span><div className="avatar">D</div></div></header>
-        <div className="welcome-row"><div><div className="eyebrow">YOUR BUSINESS, AT A GLANCE</div><h1>Good work starts<br className="mobile-break"/> with a clear view.</h1><p className="intro">A single place to keep every event, menu and payment in order.</p></div><button className="primary-button" type="button" onClick={() => document.getElementById("modules")?.scrollIntoView({ behavior: "smooth" })}>＋ <span>Explore workspace</span></button></div>
+        <header className="topbar"><div className="breadcrumb">Workspace <span>/</span> Overview</div><div className="topbar-right"><span className="date-label">CATERING OPERATIONS</span><a className="topbar-link" href="/login">Sign in</a><div className="avatar">D</div></div></header>
+        <div className="welcome-row"><div><div className="eyebrow">YOUR BUSINESS, AT A GLANCE</div><h1>Good work starts<br className="mobile-break"/> with a clear view.</h1><p className="intro">A single place to keep every event, menu and payment in order.</p></div><button className="primary-button" type="button" onClick={() => { window.location.href = "/events/new"; }}>＋ <span>Create an event</span></button></div>
 
         <div className="metrics-grid">
           <article className="metric-card"><div className="metric-top"><span>UPCOMING EVENTS</span><span className="metric-icon">◷</span></div><div className="metric-value">—</div><div className="metric-foot">Your next events will appear here</div></article>
