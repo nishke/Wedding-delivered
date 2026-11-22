@@ -34,3 +34,14 @@
 .customer-directory-main{display:grid;gap:4px;min-width:0}
 .customer-directory-main strong{font-size:12px;font-weight:600}
 .customer-directory-main span,.customer-directory-main small{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+
+
+.activity-section{border-top:1px solid var(--line);margin-top:30px;padding-top:23px}
+.activity-section h2{font:normal 23px Georgia,serif;margin:8px 0 17px}
+.activity-empty{font-size:11px;color:var(--muted);line-height:1.5}
+.activity-list{display:grid;gap:0}
+.activity-item{display:flex;gap:12px;padding:0 0 17px;position:relative}
+.activity-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--green);margin-top:4px;box-shadow:0 0 0 4px #e9ede4}
+.activity-item>div{display:grid;gap:5px}
+.activity-item p{margin:0;font-size:11px;color:var(--ink);line-height:1.5}
+.activity-item time{font-size:9px;color:var(--muted)}
