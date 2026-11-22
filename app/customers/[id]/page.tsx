@@ -41,7 +41,7 @@ export default function CustomerDetailPage(){
  return <main className="auth-shell"><section className="auth-card event-card events-list-card">
   <Link className="back-link" href="/customers">← Customers</Link><div className="eyebrow">CUSTOMER ACCOUNT · PAYMENT HISTORY</div>
   <h1>{customer.full_name}.</h1><p>{customer.phone||"No phone recorded"}{customer.email?" · "+customer.email:""}</p>
-  <div className="event-facts"><div><span>TOTAL RECEIVED</span><strong>{money(total)}</strong></div><div><span>PAYMENT ENTRIES</span><strong>{payments.length}</strong></div></div>
+  {canViewFinance&&<>\n  <div className="event-facts"><div><span>TOTAL RECEIVED</span><strong>{money(total)}</strong></div><div><span>PAYMENT ENTRIES</span><strong>{payments.length}</strong></div></div>
   <section className="activity-section"><div className="eyebrow">RECORD A RECEIPT</div><h2>Add payment</h2>
    <form className="auth-form" onSubmit={recordPayment}>
     <div className="form-pair"><label>Amount received (₹)<input type="number" min="0.01" step="0.01" required value={amount} onChange={e=>setAmount(e.target.value)} /></label><label>Payment date<input type="date" required value={date} onChange={e=>setDate(e.target.value)} /></label></div>
@@ -55,6 +55,6 @@ export default function CustomerDetailPage(){
   </section>
   <section className="activity-section"><div className="eyebrow">CUSTOMER LEDGER</div><h2>Payment history</h2>
    {payments.length===0?<p className="activity-empty">No payments recorded for this customer yet.</p>:<div className="activity-list">{payments.map(p=><article className="activity-item" key={p.id}><span className="activity-dot"/><div><p><strong>{money(Number(p.amount))}</strong> · {p.payment_method.replace("_"," ")}</p><time>{new Date(p.payment_date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}{p.booking_id?" · "+(bookings.find(b=>b.id===p.booking_id)?.event_name||"Booking linked"):" · Unallocated"}{p.reference_number?" · Ref: "+p.reference_number:""}{p.notes?" · "+p.notes:""}</time></div></article>)}</div>}
-  </section>
+  </section>\n  </>}
  </section></main>;
 }
