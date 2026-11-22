@@ -24,7 +24,9 @@ export default function EventQuotationsPage(){
  const [customerNotes,setCustomerNotes]=useState("");const [internalNotes,setInternalNotes]=useState("");
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
  const canManage=["owner","manager"].includes(role);
- const subtotal=useMemo(()=>lines.reduce((s,l)=>s+Math.max(0,Number(l.quantity)||0)*Math.max(0,Number(l.unit_price)||0),0),[lines]);
+ const lineSubtotal=useMemo(()=>lines.reduce((s,l)=>s+Math.max(0,Number(l.quantity)||0)*Math.max(0,Number(l.unit_price)||0),0),[lines]);
+ const effectiveGuests=pricing==="per_plate"?Number(guestCount||eventGuests||0):1;
+ const subtotal=lineSubtotal*effectiveGuests;
  const rate=Math.max(0,Math.min(100,Number(gstRate)||0));
  const gstAmount=!gstOn?0:gstInclusive?subtotal*rate/(100+rate):subtotal*rate/100;
  const total=!gstOn||gstInclusive?subtotal:subtotal+gstAmount;
@@ -58,6 +60,7 @@ export default function EventQuotationsPage(){
   e.preventDefault();if(!canManage)return;
   const valid=lines.filter(l=>l.description.trim()&&Number.isFinite(l.quantity)&&l.quantity>=0&&Number.isFinite(l.unit_price)&&l.unit_price>=0);
   if(!valid.length){setMessage("Add at least one valid quotation line.");return;}
+  if(pricing==="per_plate"&&(!Number.isFinite(effectiveGuests)||effectiveGuests<1)){setMessage("Enter a guest count for per-plate pricing.");return;}
   if(gstOn&&(!Number.isFinite(Number(gstRate))||Number(gstRate)<0||Number(gstRate)>100)){setMessage("GST rate must be between 0 and 100.");return;}
   setBusy(true);setMessage("");const s=createClient();
   const nextRevision=(quotes.reduce((max,q)=>Math.max(max,q.revision),0)||0)+1;
@@ -109,7 +112,7 @@ export default function EventQuotationsPage(){
     </section>
     <label>Customer-facing notes<textarea rows={2} value={customerNotes} onChange={e=>setCustomerNotes(e.target.value)} /></label>
     <label>Internal notes (not for customer)<textarea rows={2} value={internalNotes} onChange={e=>setInternalNotes(e.target.value)} /></label>
-    <section className="activity-section"><h2>Quotation summary</h2><p>Subtotal: {money(subtotal)}</p>{gstOn&&<p>GST ({rate}% {gstInclusive?"included":"extra"}): {money(gstAmount)}</p>}<h2>Total: {money(total)}</h2></section>
+    <section className="activity-section"><h2>Quotation summary</h2>{pricing==="per_plate"&&<p>Per-plate rate: {money(lineSubtotal)} × {effectiveGuests} guests</p>}<p>Subtotal: {money(subtotal)}</p>{gstOn&&<p>GST ({rate}% {gstInclusive?"included":"extra"}): {money(gstAmount)}</p>}<h2>Total: {money(total)}</h2></section>
     <button className="primary-button" disabled={busy}>{busy?"Saving…":"Save quotation draft"}</button>
    </form>}
    {selected&&<section className="activity-section"><h2>Viewing saved revision</h2><p className="activity-empty">Saved line items are loaded into the editor above for reference. Saving again creates a new revision.</p><button className="text-button" type="button" onClick={()=>setSelected("")}>Close view</button></section>}
