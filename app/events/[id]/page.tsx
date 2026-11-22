@@ -42,6 +42,7 @@ export default function EventDetailPage() {
   const [functionVenue,setFunctionVenue] = useState("");
   const [functionGuests,setFunctionGuests] = useState("");
   const [functionMenu,setFunctionMenu] = useState("");
+  const [cancellationReason,setCancellationReason] = useState("");
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState("");
@@ -151,7 +152,10 @@ export default function EventDetailPage() {
         <label>Menu notes<textarea rows={2} value={functionMenu} onChange={e=>setFunctionMenu(e.target.value)} placeholder="Function-specific menu and service notes" /></label>
         <button className="primary-button" disabled={busy}>{busy?"Adding…":"Add function"}</button>
       </form>
-    </section>\n    <section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button></section>
+    </section>\n    <section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button>
+      <label>Cancellation reason (required to cancel)<textarea rows={2} value={cancellationReason} onChange={e=>setCancellationReason(e.target.value)} placeholder="Why is this booking being cancelled?" /></label>
+      <button type="button" className="text-button" disabled={busy||approvalStatus==="cancelled"||!cancellationReason.trim()} onClick={async()=>{if(!window.confirm("Cancel this booking?"))return;setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("cancel_booking",{p_booking_id:event.id,p_reason:cancellationReason.trim()});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("cancelled");setStatus("cancelled");setMessage("Booking cancelled. Payment history has been retained.");await loadEvent();}}>Cancel booking</button>
+    </section>
     <section className="activity-section"><div className="eyebrow">EVENT HISTORY</div><h2>Activity</h2>
       {activity.length===0 ? <p className="activity-empty">No activity recorded yet.</p> :
         <div className="activity-list">{activity.map(item=><article className="activity-item" key={item.id}><span className="activity-dot"/><div><p>{item.description}</p><time>{new Date(item.created_at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"})}</time></div></article>)}</div>}
