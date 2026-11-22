@@ -51,7 +51,7 @@ export default function EventDetailPage() {
   const [functionVenue,setFunctionVenue] = useState("");
   const [functionGuests,setFunctionGuests] = useState("");
   const [functionMenu,setFunctionMenu] = useState("");
-  const [cancellationReason,setCancellationReason] = useState("");
+  const [cancellationReason,setCancellationReason] = useState("");\n  const [finalGuests,setFinalGuests] = useState("");\n  const [leftoversNotes,setLeftoversNotes] = useState("");\n  const [wastageNotes,setWastageNotes] = useState("");\n  const [closureNotes,setClosureNotes] = useState("");\n  const [closeout,setCloseout] = useState<any>(null);\n  const [allocatedReceipts,setAllocatedReceipts] = useState(0);\n  const [actualExpenseTotal,setActualExpenseTotal] = useState(0);
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState("");
@@ -64,12 +64,12 @@ export default function EventDetailPage() {
     if (!membership) { router.replace("/setup"); return; }
     setCanManageBooking(["owner","manager"].includes(membership.role));
     const {data,error} = await s.from("events")
-      .select("id,event_name,event_type,event_date,venue,expected_guest_count,status,quoted_amount,agreed_amount,advance_percentage,agreed_advance_amount,date_locked,booking_approval_status,customer_id,caterer_id")
+      .select("id,event_name,event_type,event_date,venue,expected_guest_count,final_guest_count,status,quoted_amount,agreed_amount,advance_percentage,agreed_advance_amount,date_locked,booking_approval_status,customer_id,caterer_id")
       .eq("id",params.id).eq("caterer_id",membership.caterer_id).single();
     if (error || !data) { setMessage("Event not found or you do not have access."); setLoading(false); return; }
     const row = data as EventRow;
     setEvent(row); setName(row.event_name); setType(row.event_type || "Other"); setDate(row.event_date);
-    setVenue(row.venue || ""); setGuests(row.expected_guest_count == null ? "" : String(row.expected_guest_count));
+    setVenue(row.venue || ""); setGuests(row.expected_guest_count == null ? "" : String(row.expected_guest_count)); setFinalGuests(row.final_guest_count==null?"":String(row.final_guest_count));
     setAmount(row.quoted_amount == null ? "" : String(row.quoted_amount)); setAgreedAmount(String(row.agreed_amount ?? "")); setAdvancePercentage(String(row.advance_percentage ?? 20)); setDateLocked(Boolean(row.date_locked)); setApprovalStatus(row.booking_approval_status || "pending"); setStatus(row.status);
     if (row.customer_id) {
       const {data:c} = await s.from("customers").select("full_name,phone").eq("id",row.customer_id).single();
@@ -81,6 +81,16 @@ export default function EventDetailPage() {
     const {data:functionRows}=await s.from("event_functions").select("id,function_name,function_date,venue,expected_guest_count,menu_notes").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id).order("sort_order",{ascending:true}).order("function_date",{ascending:true});
     setFunctions((functionRows||[]) as FunctionRow[]);
     if(["owner","manager"].includes(membership.role)){const {data:expenseRows}=await s.from("event_expenses").select("id,expense_type,amount,expense_date,expense_status,vendor_name,notes").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("expense_date",{ascending:false});setExpenses((expenseRows||[]) as ExpenseRow[]);}
+    if(["owner","manager"].includes(membership.role)){
+      const [{data:receiptRows},{data:closeoutRow}]=await Promise.all([
+       s.from("customer_payments").select("amount").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id),
+       s.from("event_closeouts").select("id,leftovers_notes,wastage_notes,closure_notes,closed_at").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).maybeSingle()
+      ]);
+      setAllocatedReceipts((receiptRows||[]).reduce((sum,p)=>sum+Number(p.amount||0),0));
+      setActualExpenseTotal((await s.from("event_expenses").select("amount").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).eq("expense_status","actual")).data||[]).reduce((sum,p)=>sum+Number(p.amount||0),0);
+      setCloseout(closeoutRow||null);
+      if(closeoutRow){setLeftoversNotes(closeoutRow.leftovers_notes||"");setWastageNotes(closeoutRow.wastage_notes||"");setClosureNotes(closeoutRow.closure_notes||"");}
+    }
     setLoading(false);
   }
 
@@ -165,6 +175,24 @@ export default function EventDetailPage() {
        <label>Vendor / payee (optional)<input value={expenseVendor} onChange={e=>setExpenseVendor(e.target.value)} /></label><label>Notes (optional)<input value={expenseNotes} onChange={e=>setExpenseNotes(e.target.value)} /></label>
        <button className="primary-button" disabled={busy}>{busy?"Saving…":"Add expense"}</button>
       </form>
+    </section>}
+    {canManageBooking&&<section className="activity-section"><div className="eyebrow">EVENT CLOSE-OUT</div><h2>{closeout?"Event closed":"Final reconciliation"}</h2>
+      <div className="event-facts">
+       <div><span>AGREED REVENUE</span><strong>{money(Number(event.agreed_amount))}</strong></div>
+       <div><span>RECEIVED FOR THIS EVENT</span><strong>{money(allocatedReceipts)}</strong></div>
+       <div><span>OUTSTANDING</span><strong>{money(Math.max(0,Number(event.agreed_amount)-allocatedReceipts))}</strong></div>
+       <div><span>ACTUAL EXPENSES</span><strong>{money(actualExpenseTotal)}</strong></div>
+       <div><span>PROJECTED EVENT PROFIT</span><strong>{money(Number(event.agreed_amount)-actualExpenseTotal)}</strong></div>
+      </div>
+      <p className="activity-empty">Profit is calculated as agreed revenue less actual expenses. Outstanding collections are shown separately. This excludes any tax/accounting adjustments not recorded in the event ledger.</p>
+      {closeout?<><p className="activity-empty">Closed on {new Date(closeout.closed_at).toLocaleString("en-IN")}</p><p><strong>Final guests:</strong> {event.final_guest_count??"—"}</p>{closeout.leftovers_notes&&<p><strong>Leftovers:</strong> {closeout.leftovers_notes}</p>}{closeout.wastage_notes&&<p><strong>Wastage:</strong> {closeout.wastage_notes}</p>}{closeout.closure_notes&&<p><strong>Closure notes:</strong> {closeout.closure_notes}</p>}</>:
+      <form className="auth-form" onSubmit={async e=>{e.preventDefault();const count=Number(finalGuests);if(!Number.isInteger(count)||count<1){setMessage("Enter the final guest count.");return;}if(!window.confirm("Close this event? This records the final guest count and close-out notes."))return;setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("close_event",{p_event_id:event.id,p_final_guest_count:count,p_leftovers_notes:leftoversNotes,p_wastage_notes:wastageNotes,p_closure_notes:closureNotes});setBusy(false);if(error){setMessage(error.message);return;}setStatus("closed");setEvent({...event,status:"closed",final_guest_count:count});setMessage("Event closed and reconciliation notes saved.");await loadEvent();}}>
+       <label>Final guest count<input type="number" min="1" required value={finalGuests} onChange={e=>setFinalGuests(e.target.value)} placeholder={event.expected_guest_count?String(event.expected_guest_count):"Actual number served"}/></label>
+       <label>Leftovers / food returned<textarea rows={2} value={leftoversNotes} onChange={e=>setLeftoversNotes(e.target.value)} placeholder="Record quantities or disposition, if known"/></label>
+       <label>Food wastage<textarea rows={2} value={wastageNotes} onChange={e=>setWastageNotes(e.target.value)} placeholder="Record wastage details, quantities or cost if tracked"/></label>
+       <label>Final closure notes<textarea rows={2} value={closureNotes} onChange={e=>setClosureNotes(e.target.value)} placeholder="Any final settlement or operational notes"/></label>
+       <button className="primary-button" disabled={busy||status==="cancelled"}>{busy?"Closing…":"Close event & save reconciliation"}</button>
+      </form>}
     </section>}
     <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><div className="events-title-row"><h2>Functions</h2><Link className="text-button" href={"/events/"+event.id+"/menu"}>Plan menus →</Link></div>
       {functions.length===0?<p className="activity-empty">No functions added yet.</p>:<div className="activity-list">{functions.map(fn=><article className="activity-item" key={fn.id}><span className="activity-dot"/><div><p><strong>{fn.function_name}</strong> · {new Date(fn.function_date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</p><time>{fn.expected_guest_count??"—"} guests{fn.venue?" · "+fn.venue:""}{fn.menu_notes?" · "+fn.menu_notes:""}</time></div></article>)}</div>}
