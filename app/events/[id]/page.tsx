@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 type EventRow = {
   id: string; event_name: string; event_type: string | null; event_date: string;
   venue: string | null; expected_guest_count: number | null; status: string;
-  quoted_amount: number | null; customer_id: string | null; caterer_id: string;
+  quoted_amount: number | null; agreed_amount: number; advance_percentage: number; agreed_advance_amount: number; date_locked: boolean; booking_approval_status: string; customer_id: string | null; caterer_id: string;
 };
 type Activity = { id: string; activity_type: string; description: string; created_at: string };
 const statusLabels: Record<string,string> = {
@@ -29,6 +29,10 @@ export default function EventDetailPage() {
   const [venue,setVenue] = useState("");
   const [guests,setGuests] = useState("");
   const [amount,setAmount] = useState("");
+  const [agreedAmount,setAgreedAmount] = useState("");
+  const [advancePercentage,setAdvancePercentage] = useState("20");
+  const [dateLocked,setDateLocked] = useState(false);
+  const [approvalStatus,setApprovalStatus] = useState("pending");
   const [status,setStatus] = useState("enquiry");
   const [activity,setActivity] = useState<Activity[]>([]);
   const [busy,setBusy] = useState(false);
@@ -42,13 +46,13 @@ export default function EventDetailPage() {
     const {data:membership} = await s.from("caterer_memberships").select("caterer_id").eq("user_id",user.id).limit(1).maybeSingle();
     if (!membership) { router.replace("/setup"); return; }
     const {data,error} = await s.from("events")
-      .select("id,event_name,event_type,event_date,venue,expected_guest_count,status,quoted_amount,customer_id,caterer_id")
+      .select("id,event_name,event_type,event_date,venue,expected_guest_count,status,quoted_amount,agreed_amount,advance_percentage,agreed_advance_amount,date_locked,booking_approval_status,customer_id,caterer_id")
       .eq("id",params.id).eq("caterer_id",membership.caterer_id).single();
     if (error || !data) { setMessage("Event not found or you do not have access."); setLoading(false); return; }
     const row = data as EventRow;
     setEvent(row); setName(row.event_name); setType(row.event_type || "Other"); setDate(row.event_date);
     setVenue(row.venue || ""); setGuests(row.expected_guest_count == null ? "" : String(row.expected_guest_count));
-    setAmount(row.quoted_amount == null ? "" : String(row.quoted_amount)); setStatus(row.status);
+    setAmount(row.quoted_amount == null ? "" : String(row.quoted_amount)); setAgreedAmount(String(row.agreed_amount ?? "")); setAdvancePercentage(String(row.advance_percentage ?? 20)); setDateLocked(Boolean(row.date_locked)); setApprovalStatus(row.booking_approval_status || "pending"); setStatus(row.status);
     if (row.customer_id) {
       const {data:c} = await s.from("customers").select("full_name,phone").eq("id",row.customer_id).single();
       if (c) { setCustomer(c.full_name); setPhone(c.phone || ""); }
@@ -75,7 +79,7 @@ export default function EventDetailPage() {
     const {data:{user}} = await s.auth.getUser();
     const changes = {
       event_name:name.trim(), event_type:type, event_date:date, venue:venue.trim() || null,
-      expected_guest_count:guestCount, quoted_amount:quotedAmount, status
+      expected_guest_count:guestCount, quoted_amount:quotedAmount, agreed_amount:agreedAmount.trim()===""?0:Number(agreedAmount), advance_percentage:Number(advancePercentage), date_locked:dateLocked, status
     };
     const {error} = await s.from("events").update(changes).eq("id",event.id).eq("caterer_id",event.caterer_id);
     if (error) { setBusy(false); setMessage(error.message); return; }
@@ -122,10 +126,14 @@ export default function EventDetailPage() {
         <label>Expected guests<input type="number" min="1" step="1" required value={guests} onChange={e=>setGuests(e.target.value)} /></label>
         <label>Quoted amount (₹)<input type="number" min="0" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} /></label>
       </div>
+      <div className="form-pair"><label>Agreed booking amount (₹)<input type="number" min="0" step="0.01" value={agreedAmount} onChange={e=>setAgreedAmount(e.target.value)} /></label><label>Advance percentage<input type="number" min="0" max="100" step="0.01" value={advancePercentage} onChange={e=>setAdvancePercentage(e.target.value)} /></label></div>
+      <label className="inline-check"><input type="checkbox" checked={dateLocked} onChange={e=>setDateLocked(e.target.checked)} /> Booking date is locked</label>
+      <p className="activity-empty">Required advance: {money(Math.round((Number(agreedAmount||0)*Number(advancePercentage||0)/100)*100)/100)} (default 20%)</p>
       <label>Event status<select value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(statusLabels).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
       <button className="primary-button" disabled={busy}>{busy ? "Saving…" : "Save event changes"}</button>
     </form>
     {message && <p className="auth-message" role="status">{message}</p>}
+    <section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button></section>
     <section className="activity-section"><div className="eyebrow">EVENT HISTORY</div><h2>Activity</h2>
       {activity.length===0 ? <p className="activity-empty">No activity recorded yet.</p> :
         <div className="activity-list">{activity.map(item=><article className="activity-item" key={item.id}><span className="activity-dot"/><div><p>{item.description}</p><time>{new Date(item.created_at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"})}</time></div></article>)}</div>}
