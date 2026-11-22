@@ -1,0 +1,3 @@
+create index event_quotations_event_caterer_fk_idx on public.event_quotations(event_id,caterer_id);
+create index event_quotations_created_by_idx on public.event_quotations(created_by);
+create index event_quotation_items_caterer_idx on public.event_quotation_items(caterer_id);
