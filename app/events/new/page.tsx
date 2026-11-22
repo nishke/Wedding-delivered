@@ -118,6 +118,15 @@ export default function NewEventPage() {
     }).select("id").single();
     setBusy(false);
     if (error) { setMessage(error.message); return; }
+    const { error: activityError } = await s.from("event_activity").insert({
+      caterer_id: catererId,
+      event_id: event.id,
+      actor_id: user?.id,
+      activity_type: "event_created",
+      description: "Event record created with status " + status.replaceAll("_", " ") + ".",
+      metadata: { status }
+    });
+    if (activityError) console.error("Event created but activity log failed:", activityError.message);
     router.push("/events/" + event.id);
   }
 
