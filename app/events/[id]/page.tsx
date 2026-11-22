@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type EventRow = {
   id: string; event_name: string; event_type: string | null; event_date: string;
-  venue: string | null; expected_guest_count: number | null; status: string;
+  venue: string | null; expected_guest_count: number | null; final_guest_count: number | null; status: string;
   quoted_amount: number | null; agreed_amount: number; advance_percentage: number; agreed_advance_amount: number; date_locked: boolean; booking_approval_status: string; customer_id: string | null; caterer_id: string;
 };
 type Activity = { id: string; activity_type: string; description: string; created_at: string };
@@ -94,7 +94,8 @@ export default function EventDetailPage() {
        s.from("event_closeouts").select("id,leftovers_notes,wastage_notes,closure_notes,closed_at").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).maybeSingle()
       ]);
       setAllocatedReceipts((receiptRows||[]).reduce((sum,p)=>sum+Number(p.amount||0),0));
-      setActualExpenseTotal((await s.from("event_expenses").select("amount").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).eq("expense_status","actual")).data||[]).reduce((sum,p)=>sum+Number(p.amount||0),0);
+      const {data:actualRows}=await s.from("event_expenses").select("amount").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).eq("expense_status","actual");
+      setActualExpenseTotal((actualRows||[]).reduce((sum:number,p:{amount:number})=>sum+Number(p.amount||0),0));
       setCloseout(closeoutRow||null);
       if(closeoutRow){setLeftoversNotes(closeoutRow.leftovers_notes||"");setWastageNotes(closeoutRow.wastage_notes||"");setClosureNotes(closeoutRow.closure_notes||"");}
     }
