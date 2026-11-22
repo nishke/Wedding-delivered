@@ -18,7 +18,7 @@ const modules = [
   { number: "03", title: "Quotations", detail: "Custom pricing, revisions and sharing", icon: "₹" },
   { number: "04", title: "Finance", detail: "Payments, expenses and event profit", icon: "↗" },
   { number: "05", title: "Food planning", detail: "Dish quantities, buffers and purchases", icon: "✳" },
-  { number: "06", title: "Customers & leads", detail: "Customer records and enquiry inbox", icon: "◎", href: "/customers" },
+  { number: "06", title: "Enquiry inbox", detail: "Capture and review incoming requests", icon: "◎", href: "/leads" },
 ];
 
 export default function Home() {
@@ -66,7 +66,7 @@ export default function Home() {
         <a className="nav-item" href="#modules"><span>▤</span> Menu Studio</a>
         <a className="nav-item" href="#modules"><span>₹</span> Quotations</a>
         <a className="nav-item" href="#modules"><span>↗</span> Finance</a>
-        <a className="nav-item" href="/customers"><span>◎</span> Customers & leads</a>
+        <a className="nav-item" href="/leads"><span>◎</span> Enquiry inbox</a>\n        <a className="nav-item" href="/customers"><span>◉</span> Customers</a>
         <div className="sidebar-bottom"><div className="pilot-dot"/> Pilot workspace <span className="pilot-label">V1</span></div>
       </aside>
 
