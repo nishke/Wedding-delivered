@@ -66,7 +66,8 @@ export default function Home() {
         <a className="nav-item" href="#modules"><span>▤</span> Menu Studio</a>
         <a className="nav-item" href="#modules"><span>₹</span> Quotations</a>
         <a className="nav-item" href="#modules"><span>↗</span> Finance</a>
-        <a className="nav-item" href="/leads"><span>◎</span> Enquiry inbox</a>\n        <a className="nav-item" href="/customers"><span>◉</span> Customers</a>
+        <a className="nav-item" href="/leads"><span>◎</span> Enquiry inbox</a>
+        <a className="nav-item" href="/customers"><span>◉</span> Customers</a>
         <div className="sidebar-bottom"><div className="pilot-dot"/> Pilot workspace <span className="pilot-label">V1</span></div>
       </aside>
 
