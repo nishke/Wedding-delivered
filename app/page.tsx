@@ -14,7 +14,7 @@ const priorities = [
 
 const modules = [
   { number: "01", title: "Events", detail: "Enquiries, bookings and event execution", icon: "◷", href: "/events" },
-  { number: "02", title: "Menu Studio", detail: "Standardise menus and create documents", icon: "▤" },
+  { number: "02", title: "Menu Studio", detail: "Standardise menus and create documents", icon: "▤", href: "/menu" },
   { number: "03", title: "Quotations", detail: "Custom pricing, revisions and sharing", icon: "₹" },
   { number: "04", title: "Finance", detail: "Payments, expenses and event profit", icon: "↗" },
   { number: "05", title: "Food planning", detail: "Dish quantities, buffers and purchases", icon: "✳" },
@@ -63,7 +63,7 @@ export default function Home() {
         <div className="side-label">WORKSPACE</div>
         <a className="nav-item active" href="#home"><span>⌂</span> Overview</a>
         <a className="nav-item" href="/events"><span>◷</span> Events</a>
-        <a className="nav-item" href="#modules"><span>▤</span> Menu Studio</a>
+        <a className="nav-item" href="/menu"><span>▤</span> Menu Studio</a>
         <a className="nav-item" href="#modules"><span>₹</span> Quotations</a>
         <a className="nav-item" href="#modules"><span>↗</span> Finance</a>
         <a className="nav-item" href="/leads"><span>◎</span> Enquiry inbox</a>
