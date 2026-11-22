@@ -11,7 +11,7 @@ type EventRow = {
   quoted_amount: number | null; agreed_amount: number; advance_percentage: number; agreed_advance_amount: number; date_locked: boolean; booking_approval_status: string; customer_id: string | null; caterer_id: string;
 };
 type Activity = { id: string; activity_type: string; description: string; created_at: string };
-type FunctionRow = { id:string; function_name:string; function_date:string; venue:string|null; expected_guest_count:number|null; menu_notes:string|null };
+type FunctionRow = { id:string; function_name:string; function_date:string; venue:string|null; expected_guest_count:number|null; menu_notes:string|null };\ntype ExpenseRow = {id:string;expense_type:string;amount:number;expense_date:string;expense_status:string;vendor_name:string|null;notes:string|null};
 const statusLabels: Record<string,string> = {
   enquiry:"Enquiry", quotation_in_progress:"Quotation in progress", tentative:"Tentative",
   confirmed:"Confirmed", preparation:"Preparation", completed:"Completed", closed:"Closed", cancelled:"Cancelled"
@@ -37,7 +37,7 @@ export default function EventDetailPage() {
   const [approvalStatus,setApprovalStatus] = useState("pending");
   const [status,setStatus] = useState("enquiry");
   const [activity,setActivity] = useState<Activity[]>([]);
-  const [functions,setFunctions] = useState<FunctionRow[]>([]);
+  const [functions,setFunctions] = useState<FunctionRow[]>([]);\n  const [expenses,setExpenses] = useState<ExpenseRow[]>([]);\n  const [expenseAmount,setExpenseAmount] = useState("");\n  const [expenseType,setExpenseType] = useState("ingredients");\n  const [expenseStatus,setExpenseStatus] = useState("actual");\n  const [expenseDate,setExpenseDate] = useState(new Date().toISOString().slice(0,10));\n  const [expenseVendor,setExpenseVendor] = useState("");\n  const [expenseNotes,setExpenseNotes] = useState("");
   const [functionName,setFunctionName] = useState("");
   const [functionDate,setFunctionDate] = useState("");
   const [functionVenue,setFunctionVenue] = useState("");
@@ -71,7 +71,7 @@ export default function EventDetailPage() {
       .eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("created_at",{ascending:false});
     setActivity((history || []) as Activity[]);
     const {data:functionRows}=await s.from("event_functions").select("id,function_name,function_date,venue,expected_guest_count,menu_notes").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id).order("sort_order",{ascending:true}).order("function_date",{ascending:true});
-    setFunctions((functionRows||[]) as FunctionRow[]);
+    setFunctions((functionRows||[]) as FunctionRow[]);\n    if(["owner","manager"].includes(membership.role)){const {data:expenseRows}=await s.from("event_expenses").select("id,expense_type,amount,expense_date,expense_status,vendor_name,notes").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("expense_date",{ascending:false});setExpenses((expenseRows||[]) as ExpenseRow[]);}
     setLoading(false);
   }
 
@@ -145,7 +145,17 @@ export default function EventDetailPage() {
       <button className="primary-button" disabled={busy}>{busy ? "Saving…" : "Save event changes"}</button>
     </form>
     {message && <p className="auth-message" role="status">{message}</p>}
-    <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><h2>Functions</h2>
+    {canManageBooking&&<section className="activity-section"><div className="eyebrow">EVENT COSTS</div><h2>Expenses & profitability</h2>
+      <div className="event-facts"><div><span>ESTIMATED COST</span><strong>{money(expenses.filter(x=>x.expense_status==="estimated").reduce((s,x)=>s+Number(x.amount),0))}</strong></div><div><span>ACTUAL COST</span><strong>{money(expenses.filter(x=>x.expense_status==="actual").reduce((s,x)=>s+Number(x.amount),0))}</strong></div><div><span>PROJECTED PROFIT</span><strong>{money(Number(event.agreed_amount||0)-expenses.filter(x=>x.expense_status==="estimated").reduce((s,x)=>s+Number(x.amount),0))}</strong></div><div><span>PROFIT VS AGREED AMOUNT</span><strong>{money(Number(event.agreed_amount||0)-expenses.filter(x=>x.expense_status==="actual").reduce((s,x)=>s+Number(x.amount),0))}</strong></div></div>
+      <p className="activity-empty">Profit figures use the agreed booking amount. Final event profit is confirmed only after all revenue and costs are reconciled.</p>
+      {expenses.length>0&&<div className="activity-list">{expenses.map(x=><article className="activity-item" key={x.id}><span className="activity-dot"/><div><p><strong>{money(Number(x.amount))}</strong> · {x.expense_type} · {x.expense_status}</p><time>{new Date(x.expense_date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}{x.vendor_name?" · "+x.vendor_name:""}{x.notes?" · "+x.notes:""}</time></div></article>)}</div>}
+      <form className="auth-form" onSubmit={async e=>{e.preventDefault();const value=Number(expenseAmount);if(!event||!Number.isFinite(value)||value<0)return;setBusy(true);setMessage("");const s=createClient();const {data:{user}}=await s.auth.getUser();const {error}=await s.from("event_expenses").insert({caterer_id:event.caterer_id,event_id:event.id,expense_type:expenseType,amount:value,expense_date:expenseDate,expense_status:expenseStatus,vendor_name:expenseVendor.trim()||null,notes:expenseNotes.trim()||null,recorded_by:user?.id});setBusy(false);if(error){setMessage(error.message);return;}setExpenseAmount("");setExpenseVendor("");setExpenseNotes("");await loadEvent();}}>
+       <div className="form-pair"><label>Amount (₹)<input type="number" min="0" step="0.01" required value={expenseAmount} onChange={e=>setExpenseAmount(e.target.value)} /></label><label>Expense date<input type="date" required value={expenseDate} onChange={e=>setExpenseDate(e.target.value)} /></label></div>
+       <div className="form-pair"><label>Category<select value={expenseType} onChange={e=>setExpenseType(e.target.value)}><option value="ingredients">Ingredients / food</option><option value="labour">Labour</option><option value="transport">Transport</option><option value="equipment">Equipment / rental</option><option value="miscellaneous">Miscellaneous</option></select></label><label>Record as<select value={expenseStatus} onChange={e=>setExpenseStatus(e.target.value)}><option value="estimated">Estimate</option><option value="actual">Actual expense</option></select></label></div>
+       <label>Vendor / payee (optional)<input value={expenseVendor} onChange={e=>setExpenseVendor(e.target.value)} /></label><label>Notes (optional)<input value={expenseNotes} onChange={e=>setExpenseNotes(e.target.value)} /></label>
+       <button className="primary-button" disabled={busy}>{busy?"Saving…":"Add expense"}</button>
+      </form>
+    </section>}\n    <section className="activity-section"><div className="eyebrow">FUNCTION SCHEDULE</div><h2>Functions</h2>
       {functions.length===0?<p className="activity-empty">No functions added yet.</p>:<div className="activity-list">{functions.map(fn=><article className="activity-item" key={fn.id}><span className="activity-dot"/><div><p><strong>{fn.function_name}</strong> · {new Date(fn.function_date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</p><time>{fn.expected_guest_count??"—"} guests{fn.venue?" · "+fn.venue:""}{fn.menu_notes?" · "+fn.menu_notes:""}</time></div></article>)}</div>}
       <form className="auth-form" onSubmit={async e=>{e.preventDefault();if(!event||!functionName.trim()||!functionDate)return;setBusy(true);setMessage("");const s=createClient();const {data:{user}}=await s.auth.getUser();const {error}=await s.from("event_functions").insert({caterer_id:event.caterer_id,booking_id:event.id,function_name:functionName.trim(),function_date:functionDate,venue:functionVenue.trim()||null,expected_guest_count:functionGuests?Number(functionGuests):null,menu_notes:functionMenu.trim()||null,sort_order:functions.length});setBusy(false);if(error){setMessage(error.message);return;}await s.from("event_activity").insert({caterer_id:event.caterer_id,event_id:event.id,actor_id:user?.id,activity_type:"function_added",description:"Added function: "+functionName.trim()+".",metadata:{function_date:functionDate}});setFunctionName("");setFunctionDate("");setFunctionVenue("");setFunctionGuests("");setFunctionMenu("");await loadEvent();}}>
         <label>Function name<input required value={functionName} onChange={e=>setFunctionName(e.target.value)} placeholder="e.g. Haldi, Mehendi, Reception" /></label>
