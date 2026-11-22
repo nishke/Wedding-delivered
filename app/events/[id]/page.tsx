@@ -21,7 +21,7 @@ const money = (value: number | null) => value == null ? "—" : new Intl.NumberF
 export default function EventDetailPage() {
   const params = useParams<{id:string}>();
   const router = useRouter();
-  const [event,setEvent] = useState<EventRow|null>(null);
+  const [event,setEvent] = useState<EventRow|null>(null);\n  const [canManageBooking,setCanManageBooking] = useState(false);
   const [customer,setCustomer] = useState("");
   const [phone,setPhone] = useState("");
   const [name,setName] = useState("");
@@ -51,8 +51,8 @@ export default function EventDetailPage() {
     const s = createClient();
     const {data:{user}} = await s.auth.getUser();
     if (!user) { router.replace("/login"); return; }
-    const {data:membership} = await s.from("caterer_memberships").select("caterer_id").eq("user_id",user.id).limit(1).maybeSingle();
-    if (!membership) { router.replace("/setup"); return; }
+    const {data:membership} = await s.from("caterer_memberships").select("caterer_id,role").eq("user_id",user.id).limit(1).maybeSingle();
+    if (!membership) { router.replace("/setup"); return; }\n    setCanManageBooking(["owner","manager"].includes(membership.role));
     const {data,error} = await s.from("events")
       .select("id,event_name,event_type,event_date,venue,expected_guest_count,status,quoted_amount,agreed_amount,advance_percentage,agreed_advance_amount,date_locked,booking_approval_status,customer_id,caterer_id")
       .eq("id",params.id).eq("caterer_id",membership.caterer_id).single();
@@ -122,7 +122,7 @@ export default function EventDetailPage() {
     <div className="event-facts">
       <div><span>CUSTOMER</span><strong>{customer || "—"}</strong><small>{phone}</small></div>
       <div><span>EXPECTED GUESTS</span><strong>{event.expected_guest_count ?? "—"}</strong></div>
-      <div><span>QUOTED AMOUNT</span><strong>{money(event.quoted_amount)}</strong></div>
+      {canManageBooking&&<div><span>QUOTED AMOUNT</span><strong>{money(event.quoted_amount)}</strong></div>}
       <div><span>VENUE</span><strong>{event.venue || "—"}</strong></div>
     </div>
     <form className="auth-form" onSubmit={save}>
@@ -134,11 +134,11 @@ export default function EventDetailPage() {
       <label>Venue<input value={venue} onChange={e=>setVenue(e.target.value)} /></label>
       <div className="form-pair">
         <label>Expected guests<input type="number" min="1" step="1" required value={guests} onChange={e=>setGuests(e.target.value)} /></label>
-        <label>Quoted amount (₹)<input type="number" min="0" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} /></label>
+        {canManageBooking&&<label>Quoted amount (₹)<input type="number" min="0" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)} /></label>}
       </div>
-      <div className="form-pair"><label>Agreed booking amount (₹)<input type="number" min="0" step="0.01" value={agreedAmount} onChange={e=>setAgreedAmount(e.target.value)} /></label><label>Advance percentage<input type="number" min="0" max="100" step="0.01" value={advancePercentage} onChange={e=>setAdvancePercentage(e.target.value)} /></label></div>
-      <label className="inline-check"><input type="checkbox" checked={dateLocked} onChange={e=>setDateLocked(e.target.checked)} /> Booking date is locked</label>
-      <p className="activity-empty">Required advance: {money(Math.round((Number(agreedAmount||0)*Number(advancePercentage||0)/100)*100)/100)} (default 20%)</p>
+      {canManageBooking&&<><div className="form-pair"><label>Agreed booking amount (₹)<input type="number" min="0" step="0.01" value={agreedAmount} onChange={e=>setAgreedAmount(e.target.value)} /></label><label>Advance percentage<input type="number" min="0" max="100" step="0.01" value={advancePercentage} onChange={e=>setAdvancePercentage(e.target.value)} /></label></div>
+      {canManageBooking&&<label className="inline-check"><input type="checkbox" checked={dateLocked} onChange={e=>setDateLocked(e.target.checked)} /> Booking date is locked</label>}
+      <p className="activity-empty">Required advance: {money(Math.round((Number(agreedAmount||0)*Number(advancePercentage||0)/100)*100)/100)} (default 20%)</p></>}
       <label>Event status<select value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(statusLabels).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
       <button className="primary-button" disabled={busy}>{busy ? "Saving…" : "Save event changes"}</button>
     </form>
@@ -152,7 +152,7 @@ export default function EventDetailPage() {
         <label>Menu notes<textarea rows={2} value={functionMenu} onChange={e=>setFunctionMenu(e.target.value)} placeholder="Function-specific menu and service notes" /></label>
         <button className="primary-button" disabled={busy}>{busy?"Adding…":"Add function"}</button>
       </form>
-    </section>\n    <section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button>
+    </section>\n    {canManageBooking&&<section className="activity-section"><div className="eyebrow">BOOKING APPROVAL</div><h2>{approvalStatus==="approved"?"Booking approved":approvalStatus==="cancelled"?"Booking cancelled":"Awaiting approval"}</h2><p className="activity-empty">Approval requires a locked date and customer receipts meeting the calculated advance.</p><button type="button" className="primary-button" disabled={busy||approvalStatus==="approved"||!dateLocked||Number(agreedAmount)<=0} onClick={async()=>{setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("approve_booking",{p_booking_id:event.id});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("approved");setStatus("confirmed");setMessage("Booking approved.");await loadEvent();}}>Approve booking</button>
       <label>Cancellation reason (required to cancel)<textarea rows={2} value={cancellationReason} onChange={e=>setCancellationReason(e.target.value)} placeholder="Why is this booking being cancelled?" /></label>
       <button type="button" className="text-button" disabled={busy||approvalStatus==="cancelled"||!cancellationReason.trim()} onClick={async()=>{if(!window.confirm("Cancel this booking?"))return;setBusy(true);setMessage("");const s=createClient();const {error}=await s.rpc("cancel_booking",{p_booking_id:event.id,p_reason:cancellationReason.trim()});setBusy(false);if(error){setMessage(error.message);return;}setApprovalStatus("cancelled");setStatus("cancelled");setMessage("Booking cancelled. Payment history has been retained.");await loadEvent();}}>Cancel booking</button>
     </section>
