@@ -8,13 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 type CustomerMatch = { id: string; full_name: string; phone: string | null };
 
 function normaliseName(value: string) {
-  return value.trim().replace(/\\s+/g, " ").toLocaleLowerCase();
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
 function phoneMatchPattern(value: string) {
-  const digits = value.replace(/\\D/g, "");
+  const digits = value.replace(/\D/g, "");
   if (digits.length < 7) return null;
-  return "^" + [...digits].map((digit) => digit).join("\\D*") + "$";
+  return "^" + [...digits].map((digit) => digit).join("\D*") + "$";
 }
 
 export default function NewEventPage() {
@@ -93,7 +93,7 @@ export default function NewEventPage() {
     if (!customerId) {
       const { data: customerRow, error: customerError } = await s.from("customers").insert({
         caterer_id: catererId,
-        full_name: customer.trim().replace(/\\s+/g, " "),
+        full_name: customer.trim().replace(/\s+/g, " "),
         phone: phone.trim() || null
       }).select("id").single();
       if (customerError) {
