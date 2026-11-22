@@ -22,7 +22,7 @@ export default function Home() {
         <a className="brand" href="#home"><span className="brand-mark">D</span><span>DHANDE’S<small> MILLENNIUM CATERING</small></span></a>
         <div className="side-label">WORKSPACE</div>
         <a className="nav-item active" href="#home"><span>⌂</span> Overview</a>
-        <a className="nav-item" href="/events/new"><span>◷</span> Events</a>
+        <a className="nav-item" href="/events"><span>◷</span> Events</a>
         <a className="nav-item" href="#modules"><span>▤</span> Menu Studio</a>
         <a className="nav-item" href="#modules"><span>₹</span> Quotations</a>
         <a className="nav-item" href="#modules"><span>↗</span> Finance</a>
