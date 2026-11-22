@@ -23,8 +23,10 @@ export default function CustomerDetailPage(){
   const {data:c,error}=await s.from("customers").select("id,full_name,phone,email").eq("id",params.id).eq("caterer_id",membership.caterer_id).single();
   if(error||!c){setMessage("Customer not found or access denied.");setLoading(false);return;}setCustomer(c as Customer);
   const {data:bookingRows}=await s.from("events").select("id,event_name,event_date").eq("customer_id",params.id).eq("caterer_id",membership.caterer_id).order("event_date",{ascending:false});setBookings((bookingRows||[]) as Booking[]);
-  const {data:p,error:pe}=await s.from("customer_payments").select("id,amount,payment_date,payment_method,reference_number,notes,created_at,booking_id").eq("customer_id",params.id).eq("caterer_id",membership.caterer_id).order("payment_date",{ascending:false}).order("created_at",{ascending:false});
-  if(pe)setMessage("Could not load payment history: "+pe.message);else setPayments((p||[]) as Payment[]);
+  if(["owner","manager"].includes(membership.role)){
+   const {data:p,error:pe}=await s.from("customer_payments").select("id,amount,payment_date,payment_method,reference_number,notes,created_at,booking_id").eq("customer_id",params.id).eq("caterer_id",membership.caterer_id).order("payment_date",{ascending:false}).order("created_at",{ascending:false});
+   if(pe)setMessage("Could not load payment history: "+pe.message);else setPayments((p||[]) as Payment[]);
+  }
   setLoading(false);
  }
  useEffect(()=>{void load();},[params.id,router]);
