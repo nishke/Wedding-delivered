@@ -89,45 +89,22 @@ export default function NewEventPage() {
     setBusy(true);
     setMessage("");
     const s = createClient();
-    let customerId = selectedCustomerId;
-    if (!customerId) {
-      const { data: customerRow, error: customerError } = await s.from("customers").insert({
-        caterer_id: catererId,
-        full_name: customer.trim().replace(/\s+/g, " "),
-        phone: phone.trim() || null
-      }).select("id").single();
-      if (customerError) {
-        setMessage(customerError.message);
-        setBusy(false);
-        return;
-      }
-      customerId = customerRow.id;
-    }
-    const { data: { user } } = await s.auth.getUser();
-    const { data: event, error } = await s.from("events").insert({
-      caterer_id: catererId,
-      customer_id: customerId,
-      event_name: eventName,
-      event_type: eventType,
-      event_date: date,
-      venue: venue || null,
-      expected_guest_count: Number(guests),
-      quoted_amount: amount ? Number(amount) : null,
-      status,
-      created_by: user?.id
-    }).select("id").single();
+    const { data: eventId, error } = await s.rpc("create_event_with_customer", {
+      p_caterer_id: catererId,
+      p_customer_id: selectedCustomerId || null,
+      p_customer_name: customer.trim().replace(/\s+/g, " "),
+      p_customer_phone: phone.trim() || null,
+      p_event_name: eventName.trim(),
+      p_event_type: eventType,
+      p_event_date: date,
+      p_venue: venue.trim() || null,
+      p_expected_guest_count: Number(guests),
+      p_quoted_amount: amount ? Number(amount) : null,
+      p_status: status
+    });
     setBusy(false);
     if (error) { setMessage(error.message); return; }
-    const { error: activityError } = await s.from("event_activity").insert({
-      caterer_id: catererId,
-      event_id: event.id,
-      actor_id: user?.id,
-      activity_type: "event_created",
-      description: "Event record created with status " + status.replaceAll("_", " ") + ".",
-      metadata: { status }
-    });
-    if (activityError) console.error("Event created but activity log failed:", activityError.message);
-    router.push("/events/" + event.id);
+    router.push("/events/" + eventId);
   }
 
   return (
