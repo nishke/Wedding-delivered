@@ -59,6 +59,9 @@ export default function EventDetailPage() {
   const [closeout,setCloseout] = useState<any>(null); 
   const [allocatedReceipts,setAllocatedReceipts] = useState(0); 
   const [actualExpenseTotal,setActualExpenseTotal] = useState(0);
+  const [staffMembers,setStaffMembers] = useState<{user_id:string;full_name:string|null}[]>([]);
+  const [assignedStaff,setAssignedStaff] = useState<{user_id:string;full_name:string|null}[]>([]);
+  const [staffToAssign,setStaffToAssign] = useState("");
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState("");
@@ -88,6 +91,14 @@ export default function EventDetailPage() {
     const {data:functionRows}=await s.from("event_functions").select("id,function_name,function_date,venue,expected_guest_count,menu_notes").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id).order("sort_order",{ascending:true}).order("function_date",{ascending:true});
     setFunctions((functionRows||[]) as FunctionRow[]);
     if(["owner","manager"].includes(membership.role)){const {data:expenseRows}=await s.from("event_expenses").select("id,expense_type,amount,expense_date,expense_status,vendor_name,notes").eq("event_id",row.id).eq("caterer_id",membership.caterer_id).order("expense_date",{ascending:false});setExpenses((expenseRows||[]) as ExpenseRow[]);}
+    if(["owner","manager"].includes(membership.role)){
+      const [{data:staffRows},{data:assignmentRows}]=await Promise.all([
+       s.from("caterer_memberships").select("user_id,profiles(full_name)").eq("caterer_id",membership.caterer_id).eq("role","staff"),
+       s.from("event_assignments").select("user_id,profiles(full_name)").eq("event_id",row.id).eq("caterer_id",membership.caterer_id)
+      ]);
+      setStaffMembers((staffRows||[]).map((x:any)=>({user_id:x.user_id,full_name:x.profiles?.full_name||null})));
+      setAssignedStaff((assignmentRows||[]).map((x:any)=>({user_id:x.user_id,full_name:x.profiles?.full_name||null})));
+    }
     if(["owner","manager"].includes(membership.role)){
       const [{data:receiptRows},{data:closeoutRow}]=await Promise.all([
        s.from("customer_payments").select("amount").eq("booking_id",row.id).eq("caterer_id",membership.caterer_id),
@@ -173,6 +184,10 @@ export default function EventDetailPage() {
       <button className="primary-button" disabled={busy}>{busy ? "Saving…" : "Save event changes"}</button>
     </form>
     {message && <p className="auth-message" role="status">{message}</p>}
+    {canManageBooking&&<section className="activity-section"><div className="eyebrow">WORKFORCE</div><h2>Assigned staff</h2>
+      {assignedStaff.length===0?<p className="activity-empty">No staff assigned to this event yet.</p>:<div className="activity-list">{assignedStaff.map(person=><article className="activity-item" key={person.user_id}><span className="activity-dot"/><div><p><strong>{person.full_name||"Staff member"}</strong></p><time>{person.user_id.slice(0,8)}</time></div><button type="button" className="text-button" disabled={busy} onClick={async()=>{setBusy(true);const {error}=await createClient().from("event_assignments").delete().eq("event_id",event.id).eq("user_id",person.user_id);setBusy(false);if(error){setMessage(error.message);return;}await loadEvent();}}>Remove</button></article>)}</div>}
+      {staffMembers.filter(x=>!assignedStaff.some(a=>a.user_id===x.user_id)).length>0?<form className="auth-form" onSubmit={async e=>{e.preventDefault();if(!staffToAssign)return;setBusy(true);const {data:{user}}=await createClient().auth.getUser();const {error}=await createClient().from("event_assignments").insert({caterer_id:event.caterer_id,event_id:event.id,user_id:staffToAssign,assigned_by:user?.id});setBusy(false);if(error){setMessage(error.message);return;}setStaffToAssign("");await loadEvent();}}><label>Assign staff member<select required value={staffToAssign} onChange={e=>setStaffToAssign(e.target.value)}><option value="">Select a staff member</option>{staffMembers.filter(x=>!assignedStaff.some(a=>a.user_id===x.user_id)).map(x=><option key={x.user_id} value={x.user_id}>{x.full_name||"Staff member"} · {x.user_id.slice(0,8)}</option>)}</select></label><button className="primary-button" disabled={busy||!staffToAssign}>{busy?"Saving…":"Assign to event"}</button></form>:<p className="activity-empty">No unassigned staff accounts available. Add a staff membership first.</p>}
+    </section>}
     {canManageBooking&&<section className="activity-section"><div className="eyebrow">EVENT COSTS</div><h2>Expenses & profitability</h2>
       <div className="event-facts"><div><span>ESTIMATED COST</span><strong>{money(expenses.filter(x=>x.expense_status==="estimated").reduce((s,x)=>s+Number(x.amount),0))}</strong></div><div><span>ACTUAL COST</span><strong>{money(expenses.filter(x=>x.expense_status==="actual").reduce((s,x)=>s+Number(x.amount),0))}</strong></div><div><span>PROJECTED PROFIT</span><strong>{money(Number(event.agreed_amount||0)-expenses.filter(x=>x.expense_status==="estimated").reduce((s,x)=>s+Number(x.amount),0))}</strong></div><div><span>PROFIT VS AGREED AMOUNT</span><strong>{money(Number(event.agreed_amount||0)-expenses.filter(x=>x.expense_status==="actual").reduce((s,x)=>s+Number(x.amount),0))}</strong></div></div>
       <p className="activity-empty">Profit figures use the agreed booking amount. Final event profit is confirmed only after all revenue and costs are reconciled.</p>
