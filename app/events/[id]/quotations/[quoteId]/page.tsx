@@ -24,11 +24,15 @@ export default function QuotationPrintPage(){
   setData({...q,event,caterer,customer});setItems((lineItems||[]) as Item[]);setLoading(false);
  })();},[params.id,params.quoteId,router]);
  async function markSent(){const s=createClient();const {error:e}=await s.from("event_quotations").update({status:"sent"}).eq("id",params.quoteId).eq("status","draft");if(e){setError(e.message);return;}setData((d:any)=>({...d,status:"sent"}));}
+ async function updateStatus(status:"accepted"|"rejected"){
+  const s=createClient();const {error:e}=await s.from("event_quotations").update({status}).eq("id",params.quoteId).eq("status","sent");
+  if(e){setError(e.message);return;}setData((d:any)=>({...d,status}));
+ }
  if(loading)return <main className="auth-shell"><section className="auth-card">Loading quotation…</section></main>;
  if(!data)return <main className="auth-shell"><section className="auth-card"><p>{error||"Quotation unavailable."}</p><Link href={"/events/"+params.id+"/quotations"}>Back to quotations</Link></section></main>;
  const c=data.caterer||{};const e=data.event||{};const customer=data.customer||{};
  return <main className="auth-shell quote-print-shell">
-  <div className="quote-toolbar no-print"><Link className="back-link" href={"/events/"+params.id+"/quotations"}>← Quotations</Link><div><button className="text-button" type="button" onClick={()=>window.print()}>Print / Save PDF</button>{data.status==="draft"&&<button className="primary-button" type="button" onClick={()=>void markSent()}>Mark as sent</button>}</div></div>
+  <div className="quote-toolbar no-print"><Link className="back-link" href={"/events/"+params.id+"/quotations"}>← Quotations</Link><div><button className="text-button" type="button" onClick={()=>window.print()}>Print / Save PDF</button>{data.status==="draft"&&<button className="primary-button" type="button" onClick={()=>void markSent()}>Mark as sent</button>}{data.status==="sent"&&<><button className="text-button" type="button" onClick={()=>void updateStatus("accepted")}>Mark accepted</button><button className="text-button" type="button" onClick={()=>void updateStatus("rejected")}>Mark rejected</button></>}</div></div>
   {error&&<p className="auth-message no-print">{error}</p>}
   <article className="quote-paper">
    <header className="quote-brand"><div><div className="eyebrow">CATERING SERVICES</div><h1>{c.name||"Dhande’s Millennium Catering"}</h1>{c.legal_name&&c.legal_name!==c.name&&<p>{c.legal_name}</p>}{c.address&&<p>{c.address}</p>}{c.phone&&<p>{c.phone}{c.email?" · "+c.email:""}</p>}</div><div className="quote-label"><span>QUOTATION</span><strong>#{String(data.revision).padStart(3,"0")}</strong><small>{new Date(data.created_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</small></div></header>
