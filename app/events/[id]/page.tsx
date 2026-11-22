@@ -51,7 +51,14 @@ export default function EventDetailPage() {
   const [functionVenue,setFunctionVenue] = useState("");
   const [functionGuests,setFunctionGuests] = useState("");
   const [functionMenu,setFunctionMenu] = useState("");
-  const [cancellationReason,setCancellationReason] = useState("");\n  const [finalGuests,setFinalGuests] = useState("");\n  const [leftoversNotes,setLeftoversNotes] = useState("");\n  const [wastageNotes,setWastageNotes] = useState("");\n  const [closureNotes,setClosureNotes] = useState("");\n  const [closeout,setCloseout] = useState<any>(null);\n  const [allocatedReceipts,setAllocatedReceipts] = useState(0);\n  const [actualExpenseTotal,setActualExpenseTotal] = useState(0);
+  const [cancellationReason,setCancellationReason] = useState(""); 
+  const [finalGuests,setFinalGuests] = useState(""); 
+  const [leftoversNotes,setLeftoversNotes] = useState(""); 
+  const [wastageNotes,setWastageNotes] = useState(""); 
+  const [closureNotes,setClosureNotes] = useState(""); 
+  const [closeout,setCloseout] = useState<any>(null); 
+  const [allocatedReceipts,setAllocatedReceipts] = useState(0); 
+  const [actualExpenseTotal,setActualExpenseTotal] = useState(0);
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState("");
