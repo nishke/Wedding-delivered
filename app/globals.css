@@ -52,3 +52,42 @@
 .event-filters input,.event-filters select{width:100%;border:1px solid var(--line);border-radius:5px;padding:11px;background:#fffefa;color:var(--ink);font:12px Arial,sans-serif;outline:none}
 .event-filters input:focus,.event-filters select:focus{border-color:var(--green)}
 @media(max-width:520px){.event-filters{grid-template-columns:1fr}}
+
+
+/* Quotation document */
+.quote-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 auto 16px;max-width:900px}
+.quote-toolbar>div{display:flex;gap:10px;align-items:center}
+.quote-paper{background:#fffefa;color:#242820;max-width:900px;margin:0 auto;padding:54px 58px;border:1px solid var(--line);box-shadow:0 12px 40px rgba(40,45,30,.06);font-family:Arial,sans-serif}
+.quote-brand{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}
+.quote-brand h1{font:normal 30px Georgia,serif;margin:8px 0}
+.quote-brand p,.quote-parties p{font-size:11px;color:#666b60;margin:5px 0}
+.quote-label{text-align:right;display:grid;gap:6px}
+.quote-label span,.quote-parties span,.quote-notes span{font-size:9px;letter-spacing:.16em;color:#6f765f;font-weight:700}
+.quote-label strong{font:normal 25px Georgia,serif}
+.quote-label small{font-size:10px;color:#6b6d64}
+.quote-rule{height:2px;background:#526448;margin:28px 0}
+.quote-parties{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:32px}
+.quote-parties>div{display:grid;gap:5px;align-content:start}
+.quote-parties strong{font:normal 19px Georgia,serif;margin-top:6px}
+.quote-table{width:100%;border-collapse:collapse;font-size:11px}
+.quote-table th{text-align:left;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#68705f;background:#f1f1e9;padding:12px 9px}
+.quote-table td{padding:13px 9px;border-bottom:1px solid #e5e4db;vertical-align:top}
+.quote-table th:not(:first-child),.quote-table td:not(:first-child){text-align:right}
+.quote-totals{width:min(100%,330px);margin:25px 0 0 auto;display:grid;gap:12px}
+.quote-totals>div{display:flex;justify-content:space-between;gap:20px;font-size:12px}
+.quote-grand-total{border-top:1px solid #bfc3b6;padding-top:14px;font-size:15px!important}
+.quote-grand-total strong{font:normal 22px Georgia,serif}
+.quote-footnote,.quote-notes p{font-size:11px;line-height:1.6;color:#606458}
+.quote-notes{border-top:1px solid #e5e4db;margin-top:28px;padding-top:18px}
+.quote-footer{border-top:1px solid #e5e4db;margin-top:42px;padding-top:18px;text-align:center}
+.quote-footer p{font:italic 16px Georgia,serif}
+.quote-footer span{font-size:9px;color:#73776d}
+@media(max-width:620px){.quote-paper{padding:28px 20px}.quote-brand{flex-direction:column}.quote-label{text-align:left}.quote-parties{gap:14px}.quote-table{font-size:9px}.quote-table th,.quote-table td{padding:9px 4px}.quote-toolbar{align-items:flex-start;flex-direction:column}}
+@media print{
+ @page{size:A4;margin:14mm}
+ body{background:#fff!important}
+ .quote-print-shell{display:block!important;padding:0!important;margin:0!important;max-width:none!important}
+ .quote-paper{max-width:none;border:0;box-shadow:none;margin:0;padding:0}
+ .no-print{display:none!important}
+ .quote-table tr,.quote-parties,.quote-totals{break-inside:avoid}
+}
