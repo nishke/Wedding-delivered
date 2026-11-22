@@ -13,13 +13,13 @@ const money=(n:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency
 export default function CustomerDetailPage(){
  const params=useParams<{id:string}>();const router=useRouter();
  const [customer,setCustomer]=useState<Customer|null>(null);const [payments,setPayments]=useState<Payment[]>([]);const [bookings,setBookings]=useState<Booking[]>([]);
- const [catererId,setCatererId]=useState("");const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
+ const [catererId,setCatererId]=useState("");const [canViewFinance,setCanViewFinance]=useState(false);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
  const [amount,setAmount]=useState("");const [date,setDate]=useState(new Date().toISOString().slice(0,10));
  const [method,setMethod]=useState("cash");const [bookingId,setBookingId]=useState("");const [reference,setReference]=useState("");const [notes,setNotes]=useState("");
  async function load(){
   const s=createClient();const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return;}
-  const {data:membership}=await s.from("caterer_memberships").select("caterer_id").eq("user_id",user.id).limit(1).maybeSingle();
-  if(!membership){router.replace("/setup");return;}setCatererId(membership.caterer_id);
+  const {data:membership}=await s.from("caterer_memberships").select("caterer_id,role").eq("user_id",user.id).limit(1).maybeSingle();
+  if(!membership){router.replace("/setup");return;}setCatererId(membership.caterer_id);setCanViewFinance(["owner","manager"].includes(membership.role));
   const {data:c,error}=await s.from("customers").select("id,full_name,phone,email").eq("id",params.id).eq("caterer_id",membership.caterer_id).single();
   if(error||!c){setMessage("Customer not found or access denied.");setLoading(false);return;}setCustomer(c as Customer);
   const {data:bookingRows}=await s.from("events").select("id,event_name,event_date").eq("customer_id",params.id).eq("caterer_id",membership.caterer_id).order("event_date",{ascending:false});setBookings((bookingRows||[]) as Booking[]);
