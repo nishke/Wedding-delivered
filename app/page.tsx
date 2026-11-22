@@ -22,6 +22,40 @@ const modules = [
 ];
 
 export default function Home() {
+  const router=useRouter();
+  const [metrics,setMetrics]=useState({upcoming:0,enquiries:0,due:0,revenue:0});
+  const [loading,setLoading]=useState(true);
+  const [canViewFinance,setCanViewFinance]=useState(false);
+  useEffect(()=>{
+    const load=async()=>{
+      const s=createClient();
+      const {data:{user}}=await s.auth.getUser();
+      if(!user){setLoading(false);return;}
+      const {data:membership}=await s.from("caterer_memberships").select("caterer_id,role").eq("user_id",user.id).limit(1).maybeSingle();
+      if(!membership){router.replace("/setup");return;}
+      const financeAccess=["owner","manager"].includes(membership.role);
+      setCanViewFinance(financeAccess);
+      const today=new Date();
+      const todayKey=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
+      const monthStart=todayKey.slice(0,8)+"01";
+      const {data:events}=await s.from("events").select("id,event_date,status,agreed_amount").eq("caterer_id",membership.caterer_id);
+      const {data:leads}=await s.from("leads").select("id,review_status").eq("caterer_id",membership.caterer_id);
+      const {data:payments}=financeAccess?await s.from("customer_payments").select("booking_id,amount,payment_date").eq("caterer_id",membership.caterer_id):{data:[]};
+      const rows=events||[];
+      const receipts=payments||[];
+      const paidByBooking=new Map<string,number>();
+      receipts.forEach(p=>{if(p.booking_id)paidByBooking.set(p.booking_id,(paidByBooking.get(p.booking_id)||0)+Number(p.amount));});
+      const due=rows.reduce((sum,e)=>sum+Math.max(0,Number(e.agreed_amount||0)-(paidByBooking.get(e.id)||0)),0);
+      setMetrics({
+        upcoming:rows.filter(e=>e.event_date>=todayKey&&!["closed","cancelled","completed"].includes(e.status)).length,
+        enquiries:(leads||[]).filter(l=>l.review_status==="needs_review").length,
+        due,
+        revenue:receipts.filter(p=>p.payment_date>=monthStart&&p.payment_date<=todayKey).reduce((sum,p)=>sum+Number(p.amount),0)
+      });
+      setLoading(false);
+    };
+    void load();
+  },[router]);
   return (
     <main className="shell">
       <aside className="sidebar">
