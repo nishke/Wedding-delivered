@@ -9,7 +9,7 @@ type Item={description:string;quantity:number;unit:string;unit_price:number;line
 const money=(n:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 export default function QuotationPrintPage(){
  const params=useParams<{id:string;quoteId:string}>();const router=useRouter();
- const [data,setData]=useState<any>(null);const [items,setItems]=useState<Item[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [agreedAmount,setAgreedAmount]=useState("");const [accepting,setAccepting]=useState(false);
+ const [data,setData]=useState<any>(null);const [items,setItems]=useState<Item[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [accepting,setAccepting]=useState(false);
  useEffect(()=>{void(async()=>{
   const s=createClient();const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return;}
   const {data:m}=await s.from("caterer_memberships").select("caterer_id").eq("user_id",user.id).limit(1).maybeSingle();if(!m){router.replace("/setup");return;}
@@ -21,7 +21,7 @@ export default function QuotationPrintPage(){
    s.from("event_quotation_items").select("description,quantity,unit,unit_price,line_total").eq("quotation_id",q.id).eq("caterer_id",m.caterer_id).order("sort_order")
   ]);
   let customer=null;if(event?.customer_id){const {data:customerData}=await s.from("customers").select("full_name,phone,email,address").eq("id",event.customer_id).eq("caterer_id",m.caterer_id).maybeSingle();customer=customerData;}
-  setData({...q,event,caterer,customer});setAgreedAmount(String(q.total_amount??""));setItems((lineItems||[]) as Item[]);setLoading(false);
+  setData({...q,event,caterer,customer});setItems((lineItems||[]) as Item[]);setLoading(false);
  })();},[params.id,params.quoteId,router]);
  async function markSent(){const s=createClient();const {error:e}=await s.from("event_quotations").update({status:"sent"}).eq("id",params.quoteId).eq("status","draft");if(e){setError(e.message);return;}setData((d:any)=>({...d,status:"sent"}));}
  async function updateStatus(status:"rejected"){
@@ -29,9 +29,9 @@ export default function QuotationPrintPage(){
   if(e){setError(e.message);return;}setData((d:any)=>({...d,status}));
  }
  async function acceptQuotation(){
-  const amount=Number(agreedAmount);
-  if(!Number.isFinite(amount)||amount<=0){setError("Enter an agreed booking amount greater than zero.");return;}
-  if(!window.confirm("Accept this quotation revision and set the agreed booking amount to "+money(amount)+"? The event will not be confirmed yet."))return;
+  const amount=Number(data.total_amount);
+  if(!Number.isFinite(amount)||amount<=0){setError("This quotation has no valid total and cannot be accepted.");return;}
+  if(!window.confirm("Accept quotation revision "+String(data.revision).padStart(3,"0")+" at "+money(amount)+"? This amount will become the event’s agreed booking amount. The event will not be confirmed yet."))return;
   setAccepting(true);setError("");const s=createClient();
   const {error:e}=await s.rpc("accept_quotation",{p_quotation_id:params.quoteId,p_agreed_amount:amount});
   setAccepting(false);if(e){setError(e.message);return;}
@@ -41,7 +41,7 @@ export default function QuotationPrintPage(){
  if(!data)return <main className="auth-shell"><section className="auth-card"><p>{error||"Quotation unavailable."}</p><Link href={"/events/"+params.id+"/quotations"}>Back to quotations</Link></section></main>;
  const c=data.caterer||{};const e=data.event||{};const customer=data.customer||{};
  return <main className="auth-shell quote-print-shell">
-  <div className="quote-toolbar no-print"><Link className="back-link" href={"/events/"+params.id+"/quotations"}>← Quotations</Link><div><button className="text-button" type="button" onClick={()=>window.print()}>Print / Save PDF</button>{customer.phone&&<a className="text-button" href={"https://wa.me/"+customer.phone.replace(/\D/g,"")+"?text="+encodeURIComponent("Hello "+(customer.full_name||"")+", please find your catering quotation for "+(e.event_name||"your event")+".")} target="_blank" rel="noreferrer">Share on WhatsApp</a>}{data.status==="draft"&&<button className="primary-button" type="button" onClick={()=>void markSent()}>Mark as sent</button>}{data.status==="sent"&&<><label className="quote-accept-amount">Agreed amount (₹)<input type="number" min="0.01" step="0.01" value={agreedAmount} onChange={e=>setAgreedAmount(e.target.value)}/></label><button className="primary-button" type="button" disabled={accepting} onClick={()=>void acceptQuotation()}>{accepting?"Accepting…":"Accept & set agreed amount"}</button><button className="text-button" type="button" onClick={()=>void updateStatus("rejected")}>Mark rejected</button></>}{data.status==="accepted"&&<strong className="quote-status-accepted">Accepted · Agreed amount {money(Number(data.event?.agreed_amount??agreedAmount))}</strong>}</div></div>
+  <div className="quote-toolbar no-print"><Link className="back-link" href={"/events/"+params.id+"/quotations"}>← Quotations</Link><div className="quote-toolbar-actions"><div className="quote-document-actions"><button className="quote-secondary-button" type="button" onClick={()=>window.print()}>Print / Save PDF</button>{customer.phone&&<a className="quote-secondary-button" href={"https://wa.me/"+customer.phone.replace(/\D/g,"")+"?text="+encodeURIComponent("Hello "+(customer.full_name||"")+", please find your catering quotation for "+(e.event_name||"your event")+".")} target="_blank" rel="noreferrer">Share on WhatsApp</a>}</div><div className="quote-status-actions">{data.status==="draft"&&<button className="primary-button" type="button" onClick={()=>void markSent()}>Mark as sent</button>}{data.status==="sent"&&<><p className="quote-accept-hint">Accepting this revision sets the agreed booking amount to <strong>{money(Number(data.total_amount))}</strong>. To negotiate a different amount, create a new quotation revision with the revised concession.</p><button className="primary-button quote-accept-button" type="button" disabled={accepting} onClick={()=>void acceptQuotation()}>{accepting?"Accepting…":"Accept quotation"}</button><button className="quote-secondary-button quote-reject-button" type="button" onClick={()=>void updateStatus("rejected")}>Mark rejected</button></>}{data.status==="accepted"&&<strong className="quote-status-accepted">Accepted · Agreed amount {money(Number(data.event?.agreed_amount??data.total_amount))}</strong>}</div></div></div>
   {error&&<p className="auth-message no-print">{error}</p>}
   <article className="quote-paper">
    <header className="quote-brand"><div><div className="eyebrow">CATERING SERVICES</div><h1>{c.name||"Dhande’s Millennium Catering"}</h1>{c.legal_name&&c.legal_name!==c.name&&<p>{c.legal_name}</p>}{c.address&&<p>{c.address}</p>}{c.phone&&<p>{c.phone}{c.email?" · "+c.email:""}</p>}</div><div className="quote-label"><span>QUOTATION</span><strong>#{String(data.revision).padStart(3,"0")}</strong><small>{new Date(data.created_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</small></div></header>
