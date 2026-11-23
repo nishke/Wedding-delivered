@@ -23,6 +23,7 @@ export default function EventQuotationsPage(){
  const [gstOn,setGstOn]=useState(false);const [gstRate,setGstRate]=useState("5");const [gstInclusive,setGstInclusive]=useState(false);
  const [customerNotes,setCustomerNotes]=useState("");const [internalNotes,setInternalNotes]=useState("");
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
+ const [draftReady,setDraftReady]=useState(false);const [draftState,setDraftState]=useState<"saved"|"saving"|"error"|"">("");
  const canManage=["owner","manager"].includes(role);
  const lineSubtotal=useMemo(()=>lines.reduce((s,l)=>s+Math.max(0,Number(l.quantity)||0)*Math.max(0,Number(l.unit_price)||0),0),[lines]);
  const effectiveGuests=pricing==="per_plate"?Number(guestCount||eventGuests||0):1;
@@ -42,9 +43,37 @@ export default function EventQuotationsPage(){
   if(!event){setMessage("Event not found or access denied.");setLoading(false);return;}
   setEventName(event.event_name);setEventGuests(event.final_guest_count??event.expected_guest_count??null);
   setQuotes((q||[]) as Quote[]);setFunctions((fn||[]) as FunctionRow[]);
+  const {data:draftRow}=await s.from("event_form_drafts").select("payload").eq("event_id",params.id).eq("user_id",user.id).eq("draft_key","quotation-workbench").maybeSingle();
+  if(draftRow?.payload&&typeof draftRow.payload==="object"){
+   const d=draftRow.payload as Record<string,unknown>;
+   if(Array.isArray(d.lines))setLines(d.lines.filter((x:any)=>x&&typeof x==="object").map((x:any)=>({description:String(x.description??""),quantity:String(x.quantity??"1"),unit:String(x.unit??"unit"),unit_price:String(x.unit_price??"0")})));
+   if(typeof d.functionId==="string")setFunctionId(d.functionId);
+   if(typeof d.pricing==="string")setPricing(d.pricing);
+   if(typeof d.guestCount==="string")setGuestCount(d.guestCount);
+   if(typeof d.gstOn==="boolean")setGstOn(d.gstOn);
+   if(typeof d.gstRate==="string")setGstRate(d.gstRate);
+   if(typeof d.gstInclusive==="boolean")setGstInclusive(d.gstInclusive);
+   if(typeof d.customerNotes==="string")setCustomerNotes(d.customerNotes);
+   if(typeof d.internalNotes==="string")setInternalNotes(d.internalNotes);
+   if(typeof d.selected==="string")setSelected(d.selected);
+   setMessage("Recovered your unsaved quotation draft.");
+  }
+  setDraftReady(true);
   setLoading(false);
  }
  useEffect(()=>{void load();},[params.id,router]);
+ useEffect(()=>{
+  if(!draftReady||!canManage||!catererId)return;
+  setDraftState("saving");
+  const timer=window.setTimeout(async()=>{
+   const s=createClient();const {data:{user}}=await s.auth.getUser();
+   if(!user){setDraftState("error");return;}
+   const payload={lines,pricing,guestCount,functionId,gstOn,gstRate,gstInclusive,customerNotes,internalNotes,selected};
+   const {error}=await s.from("event_form_drafts").upsert({caterer_id:catererId,event_id:params.id,user_id:user.id,draft_key:"quotation-workbench",payload,updated_at:new Date().toISOString()},{onConflict:"event_id,user_id,draft_key"});
+   setDraftState(error?"error":"saved");
+  },850);
+  return()=>window.clearTimeout(timer);
+ },[draftReady,canManage,catererId,params.id,lines,pricing,guestCount,functionId,gstOn,gstRate,gstInclusive,customerNotes,internalNotes,selected]);
  function updateLine(index:number,key:keyof Line,value:string){
   setLines(prev=>prev.map((l,i)=>i===index?{...l,[key]:value}:l));
  }
@@ -76,7 +105,11 @@ export default function EventQuotationsPage(){
   const {error:itemError}=await s.from("event_quotation_items").insert(valid.map((l,i)=>({caterer_id:catererId,quotation_id:quote.id,description:l.description.trim(),quantity:Number(l.quantity),unit:l.unit.trim()||"unit",unit_price:Number(l.unit_price),sort_order:i})));
   setBusy(false);
   if(itemError){setMessage("Quotation draft saved, but line items could not be saved: "+itemError.message);return;}
-  setMessage("Quotation revision "+nextRevision+" saved as draft.");setCustomerNotes("");setInternalNotes("");await load();
+  setMessage("Quotation revision "+nextRevision+" saved as draft.");
+  setLines([emptyLine()]);setPricing("fixed");setGuestCount("");setFunctionId("");setGstOn(false);setGstRate("5");setGstInclusive(false);setCustomerNotes("");setInternalNotes("");setSelected("");
+  const {data:{user:currentUser}}=await s.auth.getUser();
+  if(currentUser)await s.from("event_form_drafts").delete().eq("event_id",params.id).eq("user_id",currentUser.id).eq("draft_key","quotation-workbench");
+  setDraftState("saved");await load();
  }
  async function openQuote(q:Quote){
   const s=createClient();const {data,error}=await s.from("event_quotation_items").select("description,quantity,unit,unit_price").eq("quotation_id",q.id).eq("caterer_id",catererId).order("sort_order");
@@ -94,6 +127,7 @@ export default function EventQuotationsPage(){
    </section>
    {canManage&&<form className="auth-form activity-section" onSubmit={saveQuote}>
     <h2>Create new revision</h2>
+    <p className="draft-indicator" aria-live="polite">{draftState==="saving"?"Saving your quotation progress…":draftState==="saved"?"Draft saved · You can safely return later":draftState==="error"?"Draft could not sync · Keep this page open and retry":" "}</p>
     <p className="activity-empty">Each save creates a new draft revision; earlier versions remain unchanged.</p>
     <label>Pricing model<select value={pricing} onChange={e=>setPricing(e.target.value)}><option value="fixed">Fixed event amount</option><option value="per_plate">Per plate</option></select></label>
     {pricing==="per_plate"&&<label>Guest count<input type="number" min="1" value={guestCount} onChange={e=>setGuestCount(e.target.value)} placeholder={eventGuests?String(eventGuests):"Enter guest count"} /></label>}
