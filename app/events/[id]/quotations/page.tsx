@@ -26,6 +26,8 @@ export default function EventQuotationsPage(){
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
  const [draftReady,setDraftReady]=useState(false);const [draftState,setDraftState]=useState<"saved"|"saving"|"error"|"">("");
  const canManage=["owner","manager"].includes(role);
+ const latestQuote=quotes[0];
+ const canStartNewRevision=quotes.length===0||latestQuote?.status==="rejected";
  const lineSubtotal=useMemo(()=>lines.reduce((s,l)=>s+Math.max(0,Number(l.quantity)||0)*Math.max(0,Number(l.unit_price)||0),0),[lines]);
  const effectiveGuests=pricing==="per_plate"?Number(guestCount||eventGuests||0):1;
  const subtotal=lineSubtotal*effectiveGuests;
@@ -135,7 +137,7 @@ export default function EventQuotationsPage(){
    <section className="activity-section"><h2>Previous revisions</h2>
     {quotes.length===0?<p className="activity-empty">No quotations created yet.</p>:<div className="activity-list">{quotes.map(q=><article className="activity-item" key={q.id}><span className="activity-dot"/><div><p><strong>Revision {q.revision}</strong> · {q.status.toUpperCase()}</p><time>{new Date(q.created_at).toLocaleDateString("en-IN")} · {money(Number(q.total_amount))}{q.discount_amount>0?" · Discount "+money(Number(q.discount_amount)):""}{q.gst_applicable?" · GST "+q.gst_rate+"%":" · No GST applied"}</time></div><button type="button" className="text-button" onClick={()=>void openQuote(q)}>View</button><Link className="text-button" href={"/events/"+params.id+"/quotations/"+q.id}>Print / PDF →</Link></article>)}</div>}
    </section>
-   {canManage&&<form className="auth-form activity-section" onSubmit={saveQuote}>
+   {canManage&&<>{!canStartNewRevision&&<section className="activity-section quote-revision-locked"><h2>New quotation locked</h2><p>{latestQuote?.status==="sent"?"The current quotation is still awaiting the customer’s response. Use its concession field for the first negotiation, or mark it rejected before starting another quotation.":latestQuote?.status==="accepted"?"A quotation has already been accepted. This event’s commercial offer is closed.":"The current quotation must be manually marked rejected before another revision can be created."}</p><button type="button" className="quote-secondary-button" disabled>＋ Create new quotation</button></section>}{canStartNewRevision&&<form className="auth-form activity-section" onSubmit={saveQuote}>
     <h2>Create new revision</h2>
     <p className="draft-indicator" aria-live="polite">{draftState==="saving"?"Saving your quotation progress…":draftState==="saved"?"Draft saved · You can safely return later":draftState==="error"?"Draft could not sync · Keep this page open and retry":" "}</p>
     <p className="activity-empty">Each save creates a new draft revision; earlier versions remain unchanged.</p>
@@ -162,7 +164,7 @@ export default function EventQuotationsPage(){
     <label>Internal notes (not for customer)<textarea rows={2} value={internalNotes} onChange={e=>setInternalNotes(e.target.value)} /></label>
     <section className="activity-section"><h2>Quotation summary</h2>{pricing==="per_plate"&&<p>Per-plate rate: {money(lineSubtotal)} × {effectiveGuests} guests</p>}<p>Subtotal: {money(subtotal)}</p>{discountAmount>0&&<p>Discount: −{money(discountAmount)}</p>}<p>Amount after discount: {money(discountedSubtotal)}</p>{gstOn&&<p>GST ({rate}% {gstInclusive?"included":"extra"}): {money(gstAmount)}</p>}<h2>Total: {money(total)}</h2></section>
     <button className="primary-button" disabled={busy}>{busy?"Saving…":"Save quotation draft"}</button>
-   </form>}
+   </form>}</>}
    {selected&&<section className="activity-section"><h2>Viewing saved revision</h2><p className="activity-empty">Saved line items are loaded into the editor above for reference. Saving again creates a new revision.</p><button className="text-button" type="button" onClick={()=>setSelected("")}>Close view</button></section>}
   </>}
  </section></main>;
