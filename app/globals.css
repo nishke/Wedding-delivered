@@ -173,3 +173,8 @@
 @media(max-width:620px){.event-accordion{margin:13px 0;border-radius:8px}.event-accordion>summary{padding:16px;font-size:17px}.accordion-content{padding:15px 13px}}
 
 .draft-indicator{min-height:18px;margin:4px 0 12px!important;color:#98783e!important;font-size:11px!important;letter-spacing:.03em}
+
+
+/* Compact GST toggle in quotation editor */
+.auth-form .checkbox-row{display:flex;align-items:center;gap:11px;min-height:24px;line-height:1.4}
+.auth-form .checkbox-row input[type="checkbox"]{appearance:auto;-webkit-appearance:checkbox;width:18px;height:18px;min-height:18px;flex:0 0 18px;margin:0;padding:0;accent-color:#9b7839;cursor:pointer}
