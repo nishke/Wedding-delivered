@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;discount_type:string;discount_value:number;discount_amount:number;concession_reason:string|null;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;discount_amount:number;status:string;created_at:string};
+type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;discount_type:string;discount_value:number;discount_amount:number;concession_reason:string|null;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;status:string;created_at:string};
 type Line={description:string;quantity:string;unit:string;unit_price:string};
 type FunctionRow={id:string;function_name:string;function_date:string};
 type MenuRow={item_name:string;quantity:number|null;serving_unit:string;unit_price:number|null};
