@@ -21,6 +21,7 @@ export default function EventQuotationsPage(){
  const [functions,setFunctions]=useState<FunctionRow[]>([]);const [functionId,setFunctionId]=useState("");
  const [pricing,setPricing]=useState("fixed");const [guestCount,setGuestCount]=useState("");
  const [gstOn,setGstOn]=useState(false);const [gstRate,setGstRate]=useState("5");const [gstInclusive,setGstInclusive]=useState(false);
+ const [discountType,setDiscountType]=useState("none");const [discountValue,setDiscountValue]=useState("0");const [concessionReason,setConcessionReason]=useState("");
  const [customerNotes,setCustomerNotes]=useState("");const [internalNotes,setInternalNotes]=useState("");
  const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
  const [draftReady,setDraftReady]=useState(false);const [draftState,setDraftState]=useState<"saved"|"saving"|"error"|"">("");
@@ -28,9 +29,12 @@ export default function EventQuotationsPage(){
  const lineSubtotal=useMemo(()=>lines.reduce((s,l)=>s+Math.max(0,Number(l.quantity)||0)*Math.max(0,Number(l.unit_price)||0),0),[lines]);
  const effectiveGuests=pricing==="per_plate"?Number(guestCount||eventGuests||0):1;
  const subtotal=lineSubtotal*effectiveGuests;
+ const discountInput=Math.max(0,Number(discountValue)||0);
+ const discountAmount=discountType==="percentage"?subtotal*Math.min(discountInput,100)/100:discountType==="fixed"?Math.min(discountInput,subtotal):0;
+ const discountedSubtotal=Math.max(0,subtotal-discountAmount);
  const rate=Math.max(0,Math.min(100,Number(gstRate)||0));
- const gstAmount=!gstOn?0:gstInclusive?subtotal*rate/(100+rate):subtotal*rate/100;
- const total=!gstOn||gstInclusive?subtotal:subtotal+gstAmount;
+ const gstAmount=!gstOn?0:gstInclusive?discountedSubtotal*rate/(100+rate):discountedSubtotal*rate/100;
+ const total=!gstOn||gstInclusive?discountedSubtotal:discountedSubtotal+gstAmount;
  async function load(){
   const s=createClient();const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return;}
   const {data:m}=await s.from("caterer_memberships").select("caterer_id,role").eq("user_id",user.id).limit(1).maybeSingle();
@@ -53,6 +57,9 @@ export default function EventQuotationsPage(){
    if(typeof d.gstOn==="boolean")setGstOn(d.gstOn);
    if(typeof d.gstRate==="string")setGstRate(d.gstRate);
    if(typeof d.gstInclusive==="boolean")setGstInclusive(d.gstInclusive);
+   if(typeof d.discountType==="string")setDiscountType(d.discountType);
+   if(typeof d.discountValue==="string")setDiscountValue(d.discountValue);
+   if(typeof d.concessionReason==="string")setConcessionReason(d.concessionReason);
    if(typeof d.customerNotes==="string")setCustomerNotes(d.customerNotes);
    if(typeof d.internalNotes==="string")setInternalNotes(d.internalNotes);
    if(typeof d.selected==="string")setSelected(d.selected);
@@ -68,12 +75,12 @@ export default function EventQuotationsPage(){
   const timer=window.setTimeout(async()=>{
    const s=createClient();const {data:{user}}=await s.auth.getUser();
    if(!user){setDraftState("error");return;}
-   const payload={lines,pricing,guestCount,functionId,gstOn,gstRate,gstInclusive,customerNotes,internalNotes,selected};
+   const payload={lines,pricing,guestCount,functionId,gstOn,gstRate,gstInclusive,discountType,discountValue,concessionReason,customerNotes,internalNotes,selected};
    const {error}=await s.from("event_form_drafts").upsert({caterer_id:catererId,event_id:params.id,user_id:user.id,draft_key:"quotation-workbench",payload,updated_at:new Date().toISOString()},{onConflict:"event_id,user_id,draft_key"});
    setDraftState(error?"error":"saved");
   },850);
   return()=>window.clearTimeout(timer);
- },[draftReady,canManage,catererId,params.id,lines,pricing,guestCount,functionId,gstOn,gstRate,gstInclusive,customerNotes,internalNotes,selected]);
+ },[draftReady,canManage,catererId,params.id,lines,pricing,guestCount,functionId,gstOn,gstRate,gstInclusive,discountType,discountValue,concessionReason,customerNotes,internalNotes,selected]);
  function updateLine(index:number,key:keyof Line,value:string){
   setLines(prev=>prev.map((l,i)=>i===index?{...l,[key]:value}:l));
  }
@@ -97,7 +104,8 @@ export default function EventQuotationsPage(){
   const {data:quote,error}=await s.from("event_quotations").insert({
    caterer_id:catererId,event_id:params.id,revision:nextRevision,pricing_model:pricing,
    guest_count:pricing==="per_plate"?(guestCount?Number(guestCount):eventGuests):null,
-   subtotal,gst_applicable:gstOn,gst_rate:gstOn?rate:0,gst_inclusive:gstOn?gstInclusive:false,
+   subtotal,discount_type:discountType,discount_value:discountType==="none"?0:discountInput,discount_amount:discountAmount,concession_reason:concessionReason.trim()||null,
+   gst_applicable:gstOn,gst_rate:gstOn?rate:0,gst_inclusive:gstOn?gstInclusive:false,
    gst_amount:gstAmount,total_amount:total,status:"draft",
    customer_notes:customerNotes.trim()||null,internal_notes:internalNotes.trim()||null,created_by:user?.id
   }).select("id").single();
@@ -106,7 +114,7 @@ export default function EventQuotationsPage(){
   setBusy(false);
   if(itemError){setMessage("Quotation draft saved, but line items could not be saved: "+itemError.message);return;}
   setMessage("Quotation revision "+nextRevision+" saved as draft.");
-  setLines([emptyLine()]);setPricing("fixed");setGuestCount("");setFunctionId("");setGstOn(false);setGstRate("5");setGstInclusive(false);setCustomerNotes("");setInternalNotes("");setSelected("");
+  setLines([emptyLine()]);setPricing("fixed");setGuestCount("");setFunctionId("");setGstOn(false);setGstRate("5");setGstInclusive(false);setDiscountType("none");setDiscountValue("0");setConcessionReason("");setCustomerNotes("");setInternalNotes("");setSelected("");
   const {data:{user:currentUser}}=await s.auth.getUser();
   if(currentUser)await s.from("event_form_drafts").delete().eq("event_id",params.id).eq("user_id",currentUser.id).eq("draft_key","quotation-workbench");
   setDraftState("saved");await load();
@@ -140,13 +148,17 @@ export default function EventQuotationsPage(){
      <p className="activity-empty">Line total: {money((Number(l.quantity)||0)*(Number(l.unit_price)||0))}</p>
      {lines.length>1&&<button type="button" className="text-button" onClick={()=>setLines(p=>p.filter((_,j)=>j!==i))}>Remove line</button>}
     </div>)}
+    <section className="activity-section"><h2>Discount / concession</h2>
+     <label>Discount type<select value={discountType} onChange={e=>setDiscountType(e.target.value)}><option value="none">No discount</option><option value="percentage">Percentage discount</option><option value="fixed">Fixed amount discount</option></select></label>
+     {discountType!=="none"&&<><label>{discountType==="percentage"?"Discount (%)":"Discount amount (₹)"}<input type="number" min="0" step="0.01" max={discountType==="percentage"?"100":undefined} value={discountValue} onChange={e=>setDiscountValue(e.target.value)}/></label><label>Internal concession reason (not shown to customer)<select value={concessionReason} onChange={e=>setConcessionReason(e.target.value)}><option value="">Select reason</option><option>Repeat customer</option><option>Friend / family / acquaintance</option><option>Negotiated price</option><option>Menu adjustment</option><option>Strategic concession</option><option>Other</option></select></label></>}
+    </section>
     <section className="activity-section"><h2>Tax treatment</h2>
      <label className="checkbox-row"><input type="checkbox" checked={gstOn} onChange={e=>setGstOn(e.target.checked)} /> Apply GST to this quotation</label>
      {gstOn&&<><div className="form-pair"><label>GST rate (%)<input type="number" min="0" max="100" step="0.01" value={gstRate} onChange={e=>setGstRate(e.target.value)} /></label><label>Price treatment<select value={gstInclusive?"inclusive":"exclusive"} onChange={e=>setGstInclusive(e.target.value==="inclusive")}><option value="exclusive">GST added on top</option><option value="inclusive">GST included in listed prices</option></select></label></div><p className="activity-empty">Tax treatment must reflect the business's applicable GST obligations, not the payment method.</p></>}
     </section>
     <label>Customer-facing notes<textarea rows={2} value={customerNotes} onChange={e=>setCustomerNotes(e.target.value)} /></label>
     <label>Internal notes (not for customer)<textarea rows={2} value={internalNotes} onChange={e=>setInternalNotes(e.target.value)} /></label>
-    <section className="activity-section"><h2>Quotation summary</h2>{pricing==="per_plate"&&<p>Per-plate rate: {money(lineSubtotal)} × {effectiveGuests} guests</p>}<p>Subtotal: {money(subtotal)}</p>{gstOn&&<p>GST ({rate}% {gstInclusive?"included":"extra"}): {money(gstAmount)}</p>}<h2>Total: {money(total)}</h2></section>
+    <section className="activity-section"><h2>Quotation summary</h2>{pricing==="per_plate"&&<p>Per-plate rate: {money(lineSubtotal)} × {effectiveGuests} guests</p>}<p>Subtotal: {money(subtotal)}</p>{discountAmount>0&&<p>Discount: −{money(discountAmount)}</p>}<p>Amount after discount: {money(discountedSubtotal)}</p>{gstOn&&<p>GST ({rate}% {gstInclusive?"included":"extra"}): {money(gstAmount)}</p>}<h2>Total: {money(total)}</h2></section>
     <button className="primary-button" disabled={busy}>{busy?"Saving…":"Save quotation draft"}</button>
    </form>}
    {selected&&<section className="activity-section"><h2>Viewing saved revision</h2><p className="activity-empty">Saved line items are loaded into the editor above for reference. Saving again creates a new revision.</p><button className="text-button" type="button" onClick={()=>setSelected("")}>Close view</button></section>}
