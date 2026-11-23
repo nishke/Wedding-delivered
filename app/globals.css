@@ -135,3 +135,39 @@
  .event-facts>div span{font-size:8px}
  .event-facts>div strong{font-size:13px}
 }
+
+
+/* Luxury black, ivory and antique-gold visual direction */
+:root{--ink:#191814;--muted:#777166;--paper:#f1eee7;--card:#fffdf8;--line:#dcd3c2;--green:#b28b43;--green-dark:#201d17;--gold:#c6a45e;--soft-green:#eee7d8}
+.sidebar{background:#191814;border-right-color:#393328;color:#f5f0e5}
+.brand,.sidebar .brand{color:#f6f0e4}
+.brand small,.side-label{color:#b9ad96}
+.brand-mark{border-color:#a88b52;color:#d0ae68}
+.nav-item{color:#c9c0ae}
+.nav-item.active{background:#332c1e;color:#e2c27b}
+.sidebar-bottom{border-top-color:#393328;color:#b9ad96}
+.pilot-dot{background:#c6a45e}
+.primary-button{background:#201d17;color:#f8f3e9;border:1px solid #b28b43}
+.primary-button:hover{background:#3a3020}
+.avatar{background:#b28b43;color:#191814}
+.module-icon{background:#eee7d8;color:#8b6a2e}
+.event-card{border-color:#d7c9aa;box-shadow:0 18px 50px rgba(28,24,17,.08)}
+.event-card .eyebrow{color:#96763a}
+.event-card .text-button,.event-card .back-link{color:#8a692f}
+.event-card .event-facts>div{background:#f7f2e7;border-color:#e3d8c2}
+.event-card .activity-dot{background:#b28b43;box-shadow:0 0 0 4px #f0e8d7}
+
+/* Single-open, guided event workflow accordions */
+.event-accordion{border:1px solid var(--line);border-radius:9px;background:var(--card);margin:18px 0;overflow:hidden}
+.event-accordion>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;cursor:pointer;font:normal 19px Georgia,serif;color:var(--ink);background:linear-gradient(105deg,#fffdf8,#f5efe2);user-select:none}
+.event-accordion>summary::-webkit-details-marker{display:none}
+.event-accordion>summary::before{content:"";width:3px;align-self:stretch;background:#b28b43;border-radius:3px;order:-1}
+.event-accordion>summary{justify-content:flex-start}
+.event-accordion>summary .accordion-chevron{margin-left:auto;color:#9a783b;font:normal 20px Arial,sans-serif;transition:transform .2s}
+.event-accordion[open]>summary{border-bottom:1px solid var(--line);background:#f3ecdc}
+.event-accordion[open]>summary .accordion-chevron{transform:rotate(180deg)}
+.accordion-content{padding:20px}
+.accordion-content>.activity-section{border:0;margin:0;padding:0}
+.accordion-content>.activity-section h2{margin-top:4px}
+.event-accordion .auth-form{margin-top:8px}
+@media(max-width:620px){.event-accordion{margin:13px 0;border-radius:8px}.event-accordion>summary{padding:16px;font-size:17px}.accordion-content{padding:15px 13px}}
