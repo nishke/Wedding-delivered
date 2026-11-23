@@ -231,3 +231,13 @@
  .quote-status-accepted{width:100%;justify-content:flex-start}
  .quote-concession-editor{padding:13px}
 }
+
+
+.quote-toolbar>.quote-toolbar-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:stretch;min-width:0}
+.quote-toolbar>.quote-toolbar-actions>.quote-document-actions{display:flex;justify-content:flex-end;flex-wrap:wrap}
+.quote-toolbar>.quote-toolbar-actions>.quote-status-actions{display:flex;justify-content:flex-end;flex-wrap:wrap}
+@media(max-width:620px){
+ .quote-toolbar>.quote-toolbar-actions{display:grid;width:100%;grid-template-columns:minmax(0,1fr)}
+ .quote-toolbar>.quote-toolbar-actions>.quote-document-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .quote-toolbar>.quote-toolbar-actions>.quote-status-actions{display:flex;flex-direction:column;align-items:stretch}
+}
