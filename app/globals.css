@@ -171,3 +171,5 @@
 .accordion-content>.activity-section h2{margin-top:4px}
 .event-accordion .auth-form{margin-top:8px}
 @media(max-width:620px){.event-accordion{margin:13px 0;border-radius:8px}.event-accordion>summary{padding:16px;font-size:17px}.accordion-content{padding:15px 13px}}
+
+.draft-indicator{min-height:18px;margin:4px 0 12px!important;color:#98783e!important;font-size:11px!important;letter-spacing:.03em}
