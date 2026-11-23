@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;discount_amount:number;status:string;created_at:string};
+type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;discount_type:string;discount_value:number;discount_amount:number;concession_reason:string|null;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;discount_amount:number;status:string;created_at:string};
 type Line={description:string;quantity:string;unit:string;unit_price:string};
 type FunctionRow={id:string;function_name:string;function_date:string};
 type MenuRow={item_name:string;quantity:number|null;serving_unit:string;unit_price:number|null};
@@ -41,7 +41,7 @@ export default function EventQuotationsPage(){
   if(!m){router.replace("/setup");return;}setCatererId(m.caterer_id);setRole(m.role);
   const [{data:event},{data:q},{data:fn}]=await Promise.all([
    s.from("events").select("id,event_name,expected_guest_count,final_guest_count").eq("id",params.id).eq("caterer_id",m.caterer_id).maybeSingle(),
-   s.from("event_quotations").select("id,revision,pricing_model,guest_count,subtotal,discount_amount,gst_applicable,gst_rate,gst_inclusive,gst_amount,total_amount,status,created_at").eq("event_id",params.id).eq("caterer_id",m.caterer_id).order("revision",{ascending:false}),
+   s.from("event_quotations").select("id,revision,pricing_model,guest_count,subtotal,discount_type,discount_value,discount_amount,concession_reason,gst_applicable,gst_rate,gst_inclusive,gst_amount,total_amount,status,created_at").eq("event_id",params.id).eq("caterer_id",m.caterer_id).order("revision",{ascending:false}),
    s.from("event_functions").select("id,function_name,function_date").eq("booking_id",params.id).eq("caterer_id",m.caterer_id).order("sort_order")
   ]);
   if(!event){setMessage("Event not found or access denied.");setLoading(false);return;}
@@ -98,6 +98,8 @@ export default function EventQuotationsPage(){
   if(!valid.length){setMessage("Add at least one valid quotation line.");return;}
   if(pricing==="per_plate"&&(!Number.isFinite(effectiveGuests)||effectiveGuests<1)){setMessage("Enter a guest count for per-plate pricing.");return;}
   if(gstOn&&(!Number.isFinite(Number(gstRate))||Number(gstRate)<0||Number(gstRate)>100)){setMessage("GST rate must be between 0 and 100.");return;}
+  if(discountType==="percentage"&&(!Number.isFinite(discountInput)||discountInput<0||discountInput>100)){setMessage("Percentage discount must be between 0 and 100.");return;}
+  if(discountType==="fixed"&&(!Number.isFinite(discountInput)||discountInput<0||discountInput>subtotal)){setMessage("Fixed discount cannot exceed the quotation subtotal.");return;}
   setBusy(true);setMessage("");const s=createClient();
   const nextRevision=(quotes.reduce((max,q)=>Math.max(max,q.revision),0)||0)+1;
   const {data:{user}}=await s.auth.getUser();
@@ -123,7 +125,7 @@ export default function EventQuotationsPage(){
   const s=createClient();const {data,error}=await s.from("event_quotation_items").select("description,quantity,unit,unit_price").eq("quotation_id",q.id).eq("caterer_id",catererId).order("sort_order");
   if(error){setMessage(error.message);return;}
   setSelected(q.id);setLines((data||[]).map((x:any)=>({description:x.description,quantity:String(x.quantity),unit:x.unit,unit_price:String(x.unit_price)})));
-  setPricing(q.pricing_model);setGuestCount(q.guest_count===null?"":String(q.guest_count));setGstOn(q.gst_applicable);setGstRate(String(q.gst_rate));setGstInclusive(q.gst_inclusive);
+  setPricing(q.pricing_model);setGuestCount(q.guest_count===null?"":String(q.guest_count));setGstOn(q.gst_applicable);setGstRate(String(q.gst_rate));setGstInclusive(q.gst_inclusive);setDiscountType(q.discount_type||"none");setDiscountValue(String(q.discount_value??0));setConcessionReason(q.concession_reason||"");
  }
  return <main className="auth-shell"><section className="auth-card event-card events-list-card">
   <Link className="back-link" href={"/events/"+params.id}>← Event details</Link><div className="eyebrow">EVENT FINANCE · QUOTATIONS</div>
