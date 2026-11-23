@@ -209,7 +209,7 @@ export default function EventDetailPage() {
   return <main className="auth-shell"><section className="auth-card event-card">
     <Link className="back-link" href="/events">← Events</Link>
     <div className="events-title-row"><Link className="text-button" href={"/events/"+event.id+"/menu"}>Plan menu →</Link>{canManageBooking&&<Link className="text-button" href={"/events/"+event.id+"/quotations"}>Create quotation →</Link>}</div>
-    <div className="eyebrow">EVENT RECORD · EDIT</div><h1>{event.event_name}</h1><p className="draft-indicator" aria-live="polite">{draftState==="saving"?"Saving your progress…":draftState==="saved"?"Draft saved · You can safely return later":draftState==="error"?"Draft could not sync · Keep this page open and retry":" "}</p>
+    <div className="eyebrow">EVENT RECORD · EDIT</div><h1>{event.event_name}</h1>
     <p>{customer || "Customer not linked"}{phone ? " · "+phone : ""}</p>
     <div className="event-facts">
       <div><span>CUSTOMER</span><strong>{customer || "—"}</strong><small>{phone}</small></div>
@@ -217,6 +217,7 @@ export default function EventDetailPage() {
       {canManageBooking&&<div><span>QUOTED AMOUNT</span><strong>{money(event.quoted_amount)}</strong></div>}
       <div><span>VENUE</span><strong>{event.venue || "—"}</strong></div>
     </div>
+    <p className="draft-indicator" aria-live="polite">{draftState==="saving"?"Saving your progress…":draftState==="saved"?"Draft saved · You can safely return later":draftState==="error"?"Draft could not sync · Keep this page open and retry":" "}</p>
     <details className="event-accordion" name="event-sections" open><summary>Event details <span className="accordion-chevron">⌄</span></summary><div className="accordion-content"><form className="auth-form" onSubmit={save}>
       <label>Event name<input required value={name} onChange={e=>setName(e.target.value)} /></label>
       <div className="form-pair">
