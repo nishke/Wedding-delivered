@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;status:string;created_at:string};
+type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;discount_amount:number;status:string;created_at:string};
 type Line={description:string;quantity:string;unit:string;unit_price:string};
 type FunctionRow={id:string;function_name:string;function_date:string};
 type MenuRow={item_name:string;quantity:number|null;serving_unit:string;unit_price:number|null};
@@ -41,7 +41,7 @@ export default function EventQuotationsPage(){
   if(!m){router.replace("/setup");return;}setCatererId(m.caterer_id);setRole(m.role);
   const [{data:event},{data:q},{data:fn}]=await Promise.all([
    s.from("events").select("id,event_name,expected_guest_count,final_guest_count").eq("id",params.id).eq("caterer_id",m.caterer_id).maybeSingle(),
-   s.from("event_quotations").select("id,revision,pricing_model,guest_count,subtotal,gst_applicable,gst_rate,gst_inclusive,gst_amount,total_amount,status,created_at").eq("event_id",params.id).eq("caterer_id",m.caterer_id).order("revision",{ascending:false}),
+   s.from("event_quotations").select("id,revision,pricing_model,guest_count,subtotal,discount_amount,gst_applicable,gst_rate,gst_inclusive,gst_amount,total_amount,status,created_at").eq("event_id",params.id).eq("caterer_id",m.caterer_id).order("revision",{ascending:false}),
    s.from("event_functions").select("id,function_name,function_date").eq("booking_id",params.id).eq("caterer_id",m.caterer_id).order("sort_order")
   ]);
   if(!event){setMessage("Event not found or access denied.");setLoading(false);return;}
@@ -131,7 +131,7 @@ export default function EventQuotationsPage(){
   {message&&<p className="auth-message" role="status">{message}</p>}
   {loading?<p>Loading quotations…</p>:<>
    <section className="activity-section"><h2>Previous revisions</h2>
-    {quotes.length===0?<p className="activity-empty">No quotations created yet.</p>:<div className="activity-list">{quotes.map(q=><article className="activity-item" key={q.id}><span className="activity-dot"/><div><p><strong>Revision {q.revision}</strong> · {q.status.toUpperCase()}</p><time>{new Date(q.created_at).toLocaleDateString("en-IN")} · {money(Number(q.total_amount))}{q.gst_applicable?" · GST "+q.gst_rate+"%":" · No GST applied"}</time></div><button type="button" className="text-button" onClick={()=>void openQuote(q)}>View</button><Link className="text-button" href={"/events/"+params.id+"/quotations/"+q.id}>Print / PDF →</Link></article>)}</div>}
+    {quotes.length===0?<p className="activity-empty">No quotations created yet.</p>:<div className="activity-list">{quotes.map(q=><article className="activity-item" key={q.id}><span className="activity-dot"/><div><p><strong>Revision {q.revision}</strong> · {q.status.toUpperCase()}</p><time>{new Date(q.created_at).toLocaleDateString("en-IN")} · {money(Number(q.total_amount))}{q.discount_amount>0?" · Discount "+money(Number(q.discount_amount)):""}{q.gst_applicable?" · GST "+q.gst_rate+"%":" · No GST applied"}</time></div><button type="button" className="text-button" onClick={()=>void openQuote(q)}>View</button><Link className="text-button" href={"/events/"+params.id+"/quotations/"+q.id}>Print / PDF →</Link></article>)}</div>}
    </section>
    {canManage&&<form className="auth-form activity-section" onSubmit={saveQuote}>
     <h2>Create new revision</h2>
