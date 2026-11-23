@@ -6,11 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Quote={id:string;revision:number;pricing_model:string;guest_count:number|null;subtotal:number;gst_applicable:boolean;gst_rate:number;gst_inclusive:boolean;gst_amount:number;total_amount:number;status:string;created_at:string};
-type Line={description:string;quantity:number;unit:string;unit_price:number};
+type Line={description:string;quantity:string;unit:string;unit_price:string};
 type FunctionRow={id:string;function_name:string;function_date:string};
 type MenuRow={item_name:string;quantity:number|null;serving_unit:string;unit_price:number|null};
 const money=(n:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(n);
-const emptyLine=():Line=>({description:"",quantity:1,unit:"unit",unit_price:0});
+const emptyLine=():Line=>({description:"",quantity:"1",unit:"unit",unit_price:"0"});
 
 export default function EventQuotationsPage(){
  const params=useParams<{id:string}>();const router=useRouter();
@@ -46,19 +46,19 @@ export default function EventQuotationsPage(){
  }
  useEffect(()=>{void load();},[params.id,router]);
  function updateLine(index:number,key:keyof Line,value:string){
-  setLines(prev=>prev.map((l,i)=>i===index?{...l,[key]:key==="description"||key==="unit"?value:Number(value)}:l));
+  setLines(prev=>prev.map((l,i)=>i===index?{...l,[key]:value}:l));
  }
  async function importMenu(){
   if(!functionId){setMessage("Choose a function first.");return;}
   const s=createClient();const {data,error}=await s.from("event_menu_items").select("item_name,quantity,serving_unit,unit_price").eq("event_function_id",functionId).eq("caterer_id",catererId).order("sort_order");
   if(error){setMessage(error.message);return;}
   if(!data?.length){setMessage("No menu items found for this function.");return;}
-  setLines(data.map((x:MenuRow)=>({description:x.item_name,quantity:x.quantity??1,unit:x.serving_unit,unit_price:x.unit_price??0})));
+  setLines(data.map((x:MenuRow)=>({description:x.item_name,quantity:String(x.quantity??1),unit:x.serving_unit,unit_price:String(x.unit_price??0)})));
   setMessage(data.length+" menu items imported. Review quantities and prices before saving.");
  }
  async function saveQuote(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!canManage)return;
-  const valid=lines.filter(l=>l.description.trim()&&Number.isFinite(l.quantity)&&l.quantity>=0&&Number.isFinite(l.unit_price)&&l.unit_price>=0);
+  const valid=lines.filter(l=>l.description.trim()&&l.quantity.trim()!==""&&l.unit_price.trim()!==""&&Number.isFinite(Number(l.quantity))&&Number(l.quantity)>=0&&Number.isFinite(Number(l.unit_price))&&Number(l.unit_price)>=0);
   if(!valid.length){setMessage("Add at least one valid quotation line.");return;}
   if(pricing==="per_plate"&&(!Number.isFinite(effectiveGuests)||effectiveGuests<1)){setMessage("Enter a guest count for per-plate pricing.");return;}
   if(gstOn&&(!Number.isFinite(Number(gstRate))||Number(gstRate)<0||Number(gstRate)>100)){setMessage("GST rate must be between 0 and 100.");return;}
@@ -73,7 +73,7 @@ export default function EventQuotationsPage(){
    customer_notes:customerNotes.trim()||null,internal_notes:internalNotes.trim()||null,created_by:user?.id
   }).select("id").single();
   if(error||!quote){setBusy(false);setMessage(error?.message||"Could not create quotation.");return;}
-  const {error:itemError}=await s.from("event_quotation_items").insert(valid.map((l,i)=>({caterer_id:catererId,quotation_id:quote.id,description:l.description.trim(),quantity:l.quantity,unit:l.unit.trim()||"unit",unit_price:l.unit_price,sort_order:i})));
+  const {error:itemError}=await s.from("event_quotation_items").insert(valid.map((l,i)=>({caterer_id:catererId,quotation_id:quote.id,description:l.description.trim(),quantity:Number(l.quantity),unit:l.unit.trim()||"unit",unit_price:Number(l.unit_price),sort_order:i})));
   setBusy(false);
   if(itemError){setMessage("Quotation draft saved, but line items could not be saved: "+itemError.message);return;}
   setMessage("Quotation revision "+nextRevision+" saved as draft.");setCustomerNotes("");setInternalNotes("");await load();
@@ -81,7 +81,7 @@ export default function EventQuotationsPage(){
  async function openQuote(q:Quote){
   const s=createClient();const {data,error}=await s.from("event_quotation_items").select("description,quantity,unit,unit_price").eq("quotation_id",q.id).eq("caterer_id",catererId).order("sort_order");
   if(error){setMessage(error.message);return;}
-  setSelected(q.id);setLines((data||[]).map((x:any)=>({description:x.description,quantity:Number(x.quantity),unit:x.unit,unit_price:Number(x.unit_price)})));
+  setSelected(q.id);setLines((data||[]).map((x:any)=>({description:x.description,quantity:String(x.quantity),unit:x.unit,unit_price:String(x.unit_price)})));
   setPricing(q.pricing_model);setGuestCount(q.guest_count===null?"":String(q.guest_count));setGstOn(q.gst_applicable);setGstRate(String(q.gst_rate));setGstInclusive(q.gst_inclusive);
  }
  return <main className="auth-shell"><section className="auth-card event-card events-list-card">
@@ -101,9 +101,9 @@ export default function EventQuotationsPage(){
     {functions.length>0&&<div className="form-pair"><label>Import event menu<select value={functionId} onChange={e=>setFunctionId(e.target.value)}><option value="">Choose function</option>{functions.map(f=><option key={f.id} value={f.id}>{f.function_name}</option>)}</select></label><button type="button" className="text-button" onClick={()=>void importMenu()}>Import menu items</button></div>}
     {lines.map((l,i)=><div className="activity-section" key={i}>
      <label>Item description<input value={l.description} onChange={e=>updateLine(i,"description",e.target.value)} placeholder="Food, service, equipment, etc." /></label>
-     <div className="form-pair"><label>Quantity<input type="number" min="0" step="0.01" value={l.quantity} onChange={e=>updateLine(i,"quantity",e.target.value)} /></label><label>Unit<input value={l.unit} onChange={e=>updateLine(i,"unit",e.target.value)} /></label></div>
-     <label>Unit price (₹)<input type="number" min="0" step="0.01" value={l.unit_price} onChange={e=>updateLine(i,"unit_price",e.target.value)} /></label>
-     <p className="activity-empty">Line total: {money(l.quantity*l.unit_price)}</p>
+     <div className="form-pair"><label>Quantity<input type="text" inputMode="decimal" value={l.quantity} onChange={e=>updateLine(i,"quantity",e.target.value)} /></label><label>Unit<input value={l.unit} onChange={e=>updateLine(i,"unit",e.target.value)} /></label></div>
+     <label>Unit price (₹)<input type="text" inputMode="decimal" value={l.unit_price} onChange={e=>updateLine(i,"unit_price",e.target.value)} /></label>
+     <p className="activity-empty">Line total: {money((Number(l.quantity)||0)*(Number(l.unit_price)||0))}</p>
      {lines.length>1&&<button type="button" className="text-button" onClick={()=>setLines(p=>p.filter((_,j)=>j!==i))}>Remove line</button>}
     </div>)}
     <section className="activity-section"><h2>Tax treatment</h2>
