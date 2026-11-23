@@ -65,6 +65,8 @@ export default function EventDetailPage() {
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState("");
+  const [draftReady,setDraftReady] = useState(false);
+  const [draftState,setDraftState] = useState<"saved"|"saving"|"error"|"">("");
 
   async function loadEvent() {
     const s = createClient();
@@ -113,10 +115,56 @@ export default function EventDetailPage() {
       setCloseout(closeoutRow||null);
       if(closeoutRow){setLeftoversNotes(closeoutRow.leftovers_notes||"");setWastageNotes(closeoutRow.wastage_notes||"");setClosureNotes(closeoutRow.closure_notes||"");}
     }
+    const {data:draftRow} = await s.from("event_form_drafts").select("payload").eq("event_id",row.id).eq("user_id",user.id).eq("draft_key","event-detail").maybeSingle();
+    if(draftRow?.payload && typeof draftRow.payload==="object"){
+      const d=draftRow.payload as Record<string,unknown>;
+      if(typeof d.name==="string")setName(d.name);
+      if(typeof d.type==="string")setType(d.type);
+      if(typeof d.date==="string")setDate(d.date);
+      if(typeof d.venue==="string")setVenue(d.venue);
+      if(typeof d.guests==="string")setGuests(d.guests);
+      if(typeof d.amount==="string")setAmount(d.amount);
+      if(typeof d.agreedAmount==="string")setAgreedAmount(d.agreedAmount);
+      if(typeof d.advancePercentage==="string")setAdvancePercentage(d.advancePercentage);
+      if(typeof d.dateLocked==="boolean")setDateLocked(d.dateLocked);
+      if(typeof d.status==="string")setStatus(d.status);
+      if(typeof d.expenseAmount==="string")setExpenseAmount(d.expenseAmount);
+      if(typeof d.expenseType==="string")setExpenseType(d.expenseType);
+      if(typeof d.expenseStatus==="string")setExpenseStatus(d.expenseStatus);
+      if(typeof d.expenseDate==="string")setExpenseDate(d.expenseDate);
+      if(typeof d.expenseVendor==="string")setExpenseVendor(d.expenseVendor);
+      if(typeof d.expenseNotes==="string")setExpenseNotes(d.expenseNotes);
+      if(typeof d.functionName==="string")setFunctionName(d.functionName);
+      if(typeof d.functionDate==="string")setFunctionDate(d.functionDate);
+      if(typeof d.functionVenue==="string")setFunctionVenue(d.functionVenue);
+      if(typeof d.functionGuests==="string")setFunctionGuests(d.functionGuests);
+      if(typeof d.functionMenu==="string")setFunctionMenu(d.functionMenu);
+      if(typeof d.cancellationReason==="string")setCancellationReason(d.cancellationReason);
+      if(typeof d.finalGuests==="string")setFinalGuests(d.finalGuests);
+      if(typeof d.leftoversNotes==="string")setLeftoversNotes(d.leftoversNotes);
+      if(typeof d.wastageNotes==="string")setWastageNotes(d.wastageNotes);
+      if(typeof d.closureNotes==="string")setClosureNotes(d.closureNotes);
+      setMessage("Recovered your unsaved changes from the last session.");
+    }
+    setDraftReady(true);
     setLoading(false);
   }
 
   useEffect(() => { void loadEvent(); }, [params.id,router]);
+
+  useEffect(() => {
+    if(!draftReady || !event) return;
+    setDraftState("saving");
+    const timer=window.setTimeout(async()=>{
+      const s=createClient();
+      const {data:{user}}=await s.auth.getUser();
+      if(!user){setDraftState("error");return;}
+      const payload={name,type,date,venue,guests,amount,agreedAmount,advancePercentage,dateLocked,status,expenseAmount,expenseType,expenseStatus,expenseDate,expenseVendor,expenseNotes,functionName,functionDate,functionVenue,functionGuests,functionMenu,cancellationReason,finalGuests,leftoversNotes,wastageNotes,closureNotes};
+      const {error}=await s.from("event_form_drafts").upsert({caterer_id:event.caterer_id,event_id:event.id,user_id:user.id,draft_key:"event-detail",payload,updated_at:new Date().toISOString()},{onConflict:"event_id,user_id,draft_key"});
+      setDraftState(error?"error":"saved");
+    },900);
+    return ()=>window.clearTimeout(timer);
+  },[draftReady,event,name,type,date,venue,guests,amount,agreedAmount,advancePercentage,dateLocked,status,expenseAmount,expenseType,expenseStatus,expenseDate,expenseVendor,expenseNotes,functionName,functionDate,functionVenue,functionGuests,functionMenu,cancellationReason,finalGuests,leftoversNotes,wastageNotes,closureNotes]);
 
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -161,7 +209,7 @@ export default function EventDetailPage() {
   return <main className="auth-shell"><section className="auth-card event-card">
     <Link className="back-link" href="/events">← Events</Link>
     <div className="events-title-row"><Link className="text-button" href={"/events/"+event.id+"/menu"}>Plan menu →</Link>{canManageBooking&&<Link className="text-button" href={"/events/"+event.id+"/quotations"}>Create quotation →</Link>}</div>
-    <div className="eyebrow">EVENT RECORD · EDIT</div><h1>{event.event_name}</h1>
+    <div className="eyebrow">EVENT RECORD · EDIT</div><h1>{event.event_name}</h1><p className="draft-indicator" aria-live="polite">{draftState==="saving"?"Saving your progress…":draftState==="saved"?"Draft saved · You can safely return later":draftState==="error"?"Draft could not sync · Keep this page open and retry":" "}</p>
     <p>{customer || "Customer not linked"}{phone ? " · "+phone : ""}</p>
     <div className="event-facts">
       <div><span>CUSTOMER</span><strong>{customer || "—"}</strong><small>{phone}</small></div>
