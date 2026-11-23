@@ -91,3 +91,47 @@
  .no-print{display:none!important}
  .quote-table tr,.quote-parties,.quote-totals{break-inside:avoid}
 }
+
+
+/* Event detail responsive refinement */
+.event-card{width:min(100%,900px);max-width:900px;align-self:start;margin:24px auto}
+.event-card>h1{font-size:clamp(32px,5vw,46px);margin:12px 0 8px}
+.event-card>p{color:var(--muted);font-size:13px;line-height:1.55}
+.event-card .events-title-row{margin:4px 0 24px;justify-content:flex-start;gap:24px;flex-wrap:wrap}
+.event-card .events-title-row .text-button{margin:0}
+.event-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:22px 0 26px}
+.event-facts>div{min-width:0;display:grid;gap:6px;padding:14px 15px;background:#f7f6f1;border:1px solid var(--line);border-radius:7px}
+.event-facts>div span{font-size:9px;line-height:1.35;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.event-facts>div strong{font-size:16px;line-height:1.35;font-weight:600;overflow-wrap:anywhere}
+.event-facts>div small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.finance-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+.event-card .activity-section{margin-top:34px;padding-top:25px}
+.event-card .activity-section h2{font-size:clamp(23px,4vw,29px);line-height:1.2}
+.event-card .auth-form{gap:18px}
+.event-card .auth-form label{min-width:0;line-height:1.4}
+.event-card .auth-form input,.event-card .auth-form select,.event-card .auth-form textarea{min-width:0;max-width:100%;min-height:46px;font-size:16px}
+.event-card .auth-form textarea{min-height:88px;resize:vertical}
+.event-card .inline-check{display:flex!important;align-items:center;gap:10px!important;font-size:12px!important}
+.event-card .inline-check input{width:20px;height:20px;min-height:20px;flex:0 0 20px}
+.booking-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:18px}
+.booking-actions>.primary-button{width:100%;min-height:46px}
+.cancel-booking{display:grid;gap:10px;min-width:0}
+.cancel-booking .text-button{justify-self:start;margin:0;padding:8px 0}
+.event-card .activity-item{min-width:0}
+.event-card .activity-item>div{min-width:0}
+.event-card .activity-item time{overflow-wrap:anywhere}
+@media(max-width:620px){
+ .event-card{width:100%;margin:0 auto;padding:24px 18px;border-radius:0;border-left:0;border-right:0}
+ .event-card .events-title-row{gap:10px 20px;margin-bottom:20px}
+ .event-facts,.finance-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .event-facts>div{padding:12px 10px}
+ .event-facts>div strong{font-size:14px}
+ .booking-actions{grid-template-columns:1fr;gap:18px}
+ .event-card .form-pair{grid-template-columns:1fr}
+ .event-card .auth-form .primary-button{min-height:48px}
+}
+@media(max-width:360px){
+ .event-card{padding-left:14px;padding-right:14px}
+ .event-facts>div span{font-size:8px}
+ .event-facts>div strong{font-size:13px}
+}
